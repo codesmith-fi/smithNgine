@@ -243,13 +243,7 @@ namespace Codesmith.SmithNgine.Gfx
             set
             {
                 inputSource = value;
-                if (value == null)
-                {
-                    inputSource.MouseButtonPressed -= mouseSource_MouseButtonPressed;
-                    inputSource.MouseButtonReleased -= inputSource_MouseButtonReleased;
-                    inputSource.MousePositionChanged -= mouseSource_MousePositionChanged;
-                }
-                else
+                if (value != null)
                 {
                     inputSource.MouseButtonPressed += mouseSource_MouseButtonPressed;
                     inputSource.MouseButtonReleased += inputSource_MouseButtonReleased;
@@ -298,6 +292,27 @@ namespace Codesmith.SmithNgine.Gfx
         public Sprite(Texture2D texture)
         {
             Texture = texture;            
+        }
+
+        public Sprite(Sprite sprite)
+        {
+            if (sprite == null)
+            {
+                throw new ArgumentNullException(nameof(sprite), "Sprite cannot be null.");
+            }
+            FrameSize = sprite.FrameSize;
+            Texture = sprite.Texture;
+            Position = sprite.Position;
+            Origin = sprite.Origin;
+            Rotation = sprite.Rotation;
+            Scale = sprite.Scale;
+            Color = sprite.Color;
+            Order = sprite.Order;
+            HasFocus = sprite.HasFocus;
+            IsHovered = sprite.IsHovered;   
+            InputEventSource = sprite.InputEventSource;
+            this.dragEnabled = sprite.dragEnabled;
+
         }
 
         /// <summary>
