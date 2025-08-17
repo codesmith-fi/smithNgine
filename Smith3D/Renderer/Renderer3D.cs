@@ -46,6 +46,11 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
 
         }
 
+        void RenderMesh(Mesh3D mesh)
+        {
+
+        }
+
         public void RenderPolygon(Polygon3D polygon, Matrix world, Matrix view, Matrix projection)
         {
             // Set transformation matrices
