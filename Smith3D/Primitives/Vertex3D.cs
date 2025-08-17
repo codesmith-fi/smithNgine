@@ -9,7 +9,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
     {
         public Vector3 Position { get; set; }
         public Vector3 Normal { get; set; }
-        public Vector2 TextureCoordinate { get; set; }
+        public Vector2 TextureUV { get; set; }
         public Color Color { get; set; }
 
         public Vertex3D(Vector3 position, Color color = default)
@@ -17,20 +17,28 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             Position = position;
             Color = color == default(Color) ? Color.White : color;
             Normal = Vector3.Up; // Default normal
-            TextureCoordinate = Vector2.Zero; // Default texture coordinate
+            TextureUV = Vector2.Zero; // Default texture coordinate
         }
 
-        public Vertex3D(Vector3 position, Vector3 normal, Vector2 textureCoordinate, Color color = default)
+        public Vertex3D(Vector3 position, Vector3 normal, Vector2 textureUV)
+            : this(position, normal, textureUV, Color.White)
+        {
+        }
+
+        public Vertex3D(Vector3 position, Vector2 textureUV, Color color = default)
         {
             Position = position;
-            Normal = normal;
-            TextureCoordinate = textureCoordinate;
+            Normal = Vector3.Up;
+            TextureUV = textureUV;
             Color = color == default(Color) ? Color.White : color;
         }
 
-        public Vertex3D(Vector3 position, Vector3 normal, Vector2 textureCoordinate)
-            : this(position, normal, textureCoordinate, Color.White)
+        public Vertex3D(Vector3 position, Vector3 normal, Vector2 textureUV, Color color = default)
         {
+            Position = position;
+            Normal = normal;
+            TextureUV = textureUV;
+            Color = color == default(Color) ? Color.White : color;
         }
 
         public Vertex3D Transform(Matrix matrix)
@@ -39,11 +47,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             Matrix normalMatrix = Matrix.Transpose(Matrix.Invert(matrix));
             Vector3 transformedNormal = Vector3.TransformNormal(Normal, normalMatrix);
 
-            return new Vertex3D(transformedPosition, Color)
-            {
-                Normal = transformedNormal,
-                TextureCoordinate = this.TextureCoordinate
-            };
+            return new Vertex3D(transformedPosition, transformedNormal, TextureUV, Color);
         }
 
         public VertexPositionColor ToVertexPositionColor()
@@ -53,7 +57,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
 
         public override string ToString()
         {
-            return $"Position: {Position}, Normal: {Normal}, TextureCoordinate: {TextureCoordinate}";
+            return $"Position: {Position}, Normal: {Normal}, TextureCoordinate: {TextureUV}";
         }
     }
 

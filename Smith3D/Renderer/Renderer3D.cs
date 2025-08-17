@@ -53,12 +53,43 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             effect.View = view;
             effect.Projection = projection;
 
-            // Convert polygon to renderable vertices
-            VertexPositionColor[] vertexData = polygon.ToVertexPositionColorArray();
+            effect.Texture = polygon.Texture;
+            effect.VertexColorEnabled = true;
+            effect.TextureEnabled = true;
 
+            // Convert polygon to renderable vertices
+            VertexPositionColorTexture[] vertexData = polygon.ToVertexPositionColorTextureArray();
+            VertexBuffer vertexBuffer = new VertexBuffer(
+                graphicsDevice,
+                //                VertexPositionColorTexture.VertexDeclaration,
+                VertexPositionColorTexture.VertexDeclaration,
+                vertexData.Length,
+                BufferUsage.WriteOnly);
+
+            vertexBuffer.SetData(vertexData);
+            graphicsDevice.SetVertexBuffer(vertexBuffer);
+
+            // Apply effect and draw
+            foreach (EffectPass pass in effect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                graphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, 1);
+            }
+        }
+
+        public void RenderPolygonFlat(Polygon3D polygon, Matrix world, Matrix view, Matrix projection)
+        {
+            // Set transformation matrices
+            effect.World = world;
+            effect.View = view;
+            effect.Projection = projection;
+            effect.VertexColorEnabled = true;
+
+            VertexPositionColor[] vertexData = polygon.ToVertexPositionColorArray();
             // Create and bind vertex buffer
             VertexBuffer vertexBuffer = new VertexBuffer(
                 graphicsDevice,
+                //                VertexPositionColorTexture.VertexDeclaration,
                 VertexPositionColor.VertexDeclaration,
                 vertexData.Length,
                 BufferUsage.WriteOnly);
@@ -73,5 +104,6 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
                 graphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, 1);
             }
         }
+
     }
 }

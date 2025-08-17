@@ -13,22 +13,22 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
     {
         private Vertex3D[] vertices;
         public Vertex3D[] Vertices => vertices;
-        public Color Color { get; set; }
         public Texture2D Texture { get; set; }
-        public Vector2 TextureUV { get; set; }        
-        
-        public Polygon3D(Vertex3D[] vertices)
+
+        public Polygon3D(Vertex3D[] vertices, Texture2D texture)
         {
             if (vertices.Length != 3)
             {
                 throw new ArgumentException("A polygon must have exactly three vertices.");
             }
             this.vertices = vertices;
+            Texture = texture;
         }
 
-        public Polygon3D(Vertex3D vertex1, Vertex3D vertex2, Vertex3D vertex3)
+        public Polygon3D(Vertex3D vertex1, Vertex3D vertex2, Vertex3D vertex3, Texture2D texture)
         {
             vertices = [vertex1, vertex2, vertex3];
+            Texture = texture;
         }
 
         //
@@ -37,8 +37,8 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
         public Polygon3D GetTransformedCopy(Matrix transform)
         {
             var transformedVertices = vertices.Select(v => v.Transform(transform)).ToArray();
-            return new Polygon3D(transformedVertices);
-        } 
+            return new Polygon3D(transformedVertices, Texture);
+        }
 
         public Vector3 ComputeNormal()
         {
@@ -46,17 +46,31 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             var edge2 = vertices[2].Position - vertices[0].Position;
             return Vector3.Normalize(Vector3.Cross(edge1, edge2));
         }
-        
+
         public BoundingBox GetBoundingBox()
         {
             var positions = vertices.Select(v => v.Position).ToArray();
             return BoundingBox.CreateFromPoints(positions);
         }
 
+        public void SetColor(Color color)
+        {
+            foreach (var vertex in vertices)
+            {
+                vertex.Color = color;
+            }
+        }
+
         public VertexPositionColor[] ToVertexPositionColorArray()
         {
             return vertices.Select(v => new VertexPositionColor(v.Position, v.Color)).ToArray();
         }
+
+        public VertexPositionColorTexture[] ToVertexPositionColorTextureArray()
+        {
+            return Vertices.Select(v => new VertexPositionColorTexture(v.Position, v.Color, v.TextureUV)).ToArray();
+        }
+
 
     }
 }
