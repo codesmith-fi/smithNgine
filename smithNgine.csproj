@@ -8,13 +8,20 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Collision\" />
+    <Folder Include="Content\" />
+    <Folder Include="Datatypes\" />
+    <Folder Include="Design\" />
+    <Folder Include="FarseerPhysics\" />
     <Folder Include="GameState\" />
     <Folder Include="General\" />
+    <Folder Include="Gfx\" />
     <Folder Include="Input\" />
     <Folder Include="MathUtil\" />
+    <Folder Include="Particles\" />
     <Folder Include="Particles\Generators\" />
     <Folder Include="Particles\Modifiers\" />
     <Folder Include="Primitives\" />
-    <Folder Include="FarseerPhysics\" />
+    <Folder Include="Smith3D\" />
   </ItemGroup>
 </Project>
