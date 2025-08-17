@@ -15,7 +15,8 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
         public Vertex3D[] Vertices => vertices;
         public Color Color { get; set; }
         public Texture2D Texture { get; set; }
-
+        public Vector2 TextureUV { get; set; }        
+        
         public Polygon3D(Vertex3D[] vertices)
         {
             if (vertices.Length != 3)
@@ -38,26 +39,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             var transformedVertices = vertices.Select(v => v.Transform(transform)).ToArray();
             return new Polygon3D(transformedVertices);
         } 
-/*
-        public void ApplyTransform()
-        {
-            Matrix transform =
-                Matrix.CreateScale(Scale) *
-                Matrix.CreateFromYawPitchRoll(Rotation.Y, Rotation.X, Rotation.Z) *
-                Matrix.CreateTranslation(Position);
 
-
-            for (int i = 0; i < vertices.Length; i++)
-            {
-                vertices[i] = vertices[i].Transform(transform);
-            }
-
-            // Reset local transform after applying
-            Position = Vector3.Zero;
-            Rotation = new Quaternion();
-            Scale = Vector3.One;
-        }
-*/
         public Vector3 ComputeNormal()
         {
             var edge1 = vertices[1].Position - vertices[0].Position;

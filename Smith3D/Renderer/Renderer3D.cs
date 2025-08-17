@@ -1,12 +1,11 @@
-using System;
 
 namespace Codesmith.SmithNgine.Smith3D.Renderer
 {
+    using System;
     using Microsoft.Xna.Framework;
     using Microsoft.Xna.Framework.Graphics;
-    using Codesmith.SmithNgine.Smith3D.Primitives;
     using System.Collections.Generic;
-
+    using Codesmith.SmithNgine.Smith3D.Primitives;
 
     /// <summary>
     /// Renderer class for rendering 3D objects in the game.
