@@ -43,7 +43,7 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             // Render objects
             foreach (var obj in scene.Objects)
             {
-                effect.World = obj.WorldMatrix;
+                effect.World = Matrix.Identity;
                 RenderObjectWithMesh(obj, effect.World, effect.View, effect.Projection);
             }
 
