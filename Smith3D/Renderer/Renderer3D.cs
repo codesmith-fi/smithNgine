@@ -32,6 +32,24 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             effect.DirectionalLight0.DiffuseColor = new Vector3(1, 1, 1);
         }
 
+        public void RenderScene(Scene3D scene)
+        {
+            if (scene == null) throw new ArgumentNullException(nameof(scene), "Scene cannot be null.");
+
+            // Set camera matrices
+            effect.View = scene.Camera.ViewMatrix;
+            effect.Projection = scene.Camera.ProjectionMatrix;
+
+            // Render objects
+            foreach (var obj in scene.Objects)
+            {
+                effect.World = obj.WorldMatrix;
+                RenderObjectWithMesh(obj, effect.World, effect.View, effect.Projection);
+            }
+
+            // Render lights if needed (not implemented in this example)
+        }
+
         public void RenderObject(Object3D obj, Matrix world, Matrix view, Matrix projection)
         {
             effect.World = world;
@@ -44,6 +62,19 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
                 RenderPolygon(polygon, world, view, projection);
             }
 
+        }
+
+        public void RenderObjectFlat(Object3D obj, Matrix world, Matrix view, Matrix projection)
+        {
+            effect.World = world;
+            effect.View = view;
+            effect.Projection = projection;
+
+            IEnumerable<Polygon3D> transformedVertices = obj.GetTransformedPolygons();
+            foreach (var polygon in transformedVertices)
+            {
+                RenderPolygonFlat(polygon, world, view, projection);
+            }
         }
 
         public void RenderObjectWithMesh(Object3D obj, Matrix world, Matrix view, Matrix projection)

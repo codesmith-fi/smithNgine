@@ -12,9 +12,9 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
     /// </summary>
     public class Camera3D
     {
-        public Vector3 Position { get; set; }
-        public Vector3 Target { get; set; }
-        public Vector3 Up { get; set; }
+        public Vector3 Position { get; private set; }
+        public Vector3 Target { get; private set; }
+        public Vector3 Up { get; private set; }
         public Matrix ViewMatrix { get; private set; }
         public Matrix ProjectionMatrix { get; private set; }
 
@@ -27,7 +27,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             UpdateViewMatrix();
             UpdateProjectionMatrix(fieldOfView, aspectRatio, nearPlaneDistance, farPlaneDistance);
         }
-        
+
         public void SetPosition(Vector3 position)
         {
             Position = position;

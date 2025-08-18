@@ -18,9 +18,10 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
         {
             get
             {
-                return Matrix.CreateScale(Scale) *
-                    Matrix.CreateFromQuaternion(Rotation) *
-                    Matrix.CreateTranslation(Position);
+            return 
+                Matrix.CreateScale(Scale) *
+                Matrix.CreateFromQuaternion(Rotation) * 
+                Matrix.CreateTranslation(Position);
             }
         }
 
@@ -66,11 +67,11 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
 
         public void Rotate(Vector3 angleDeltaRadians)
         {
-            RotateY(angleDeltaRadians.Y);
             RotateX(angleDeltaRadians.X);
+            RotateY(angleDeltaRadians.Y);
             RotateZ(angleDeltaRadians.Z);
         }       
-        
+
         public void AddPolygon(Polygon3D polygon)
         {
             if (polygon.Texture == null)
