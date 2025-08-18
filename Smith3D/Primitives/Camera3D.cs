@@ -24,14 +24,37 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             Target = target;
             Up = up;
 
-            ViewMatrix = Matrix.CreateLookAt(Position, Target, Up);
-            ProjectionMatrix = Matrix.CreatePerspectiveFieldOfView(fieldOfView, aspectRatio, nearPlaneDistance, farPlaneDistance);
+            UpdateViewMatrix();
+            UpdateProjectionMatrix(fieldOfView, aspectRatio, nearPlaneDistance, farPlaneDistance);
+        }
+        
+        public void SetPosition(Vector3 position)
+        {
+            Position = position;
+            UpdateViewMatrix();
+        }   
+
+        public void SetTarget(Vector3 target)
+        {
+            Target = target;
+            UpdateViewMatrix();
+        }
+        
+        public void SetUp(Vector3 up)
+        {
+            Up = up;
+            UpdateViewMatrix();
         }
 
-        public void UpdateViewMatrix()
+        private void UpdateViewMatrix()
         {
             ViewMatrix = Matrix.CreateLookAt(Position, Target, Up);
         }        
+
+        private void UpdateProjectionMatrix(float fieldOfView, float aspectRatio, float nearPlaneDistance, float farPlaneDistance)
+        {
+            ProjectionMatrix = Matrix.CreatePerspectiveFieldOfView(fieldOfView, aspectRatio, nearPlaneDistance, farPlaneDistance);
+        }
     }
 
 }
