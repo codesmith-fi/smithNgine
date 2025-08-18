@@ -12,6 +12,14 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
         public Vector2 TextureUV { get; set; }
         public Color Color { get; set; }
 
+        public Vertex3D(Vertex3D vertex)
+        {
+            Position = vertex.Position;
+            Normal = vertex.Normal;
+            TextureUV = vertex.TextureUV;
+            Color = vertex.Color;
+        }
+        
         public Vertex3D(Vector3 position, Color color = default)
         {
             Position = position;

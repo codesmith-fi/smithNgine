@@ -9,7 +9,6 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
     public class Object3D
     {
         public List<Polygon3D> Polygons { get; private set; } = new List<Polygon3D>();
-
         public Dictionary<Texture2D, List<Polygon3D>> PolygonsByTexture { get; private set; } = new Dictionary<Texture2D, List<Polygon3D>>();
         public Dictionary<Texture2D, Mesh3D> MeshesByTexture { get; private set; } = new Dictionary<Texture2D, Mesh3D>();
         public Vector3 Position { get; set; } = Vector3.Zero;
@@ -67,14 +66,11 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
 
         public void Rotate(Vector3 angleDeltaRadians)
         {
-            Quaternion delta = Quaternion.CreateFromYawPitchRoll(
-                angleDeltaRadians.Y,
-                angleDeltaRadians.X,
-                angleDeltaRadians.Z
-            );
-            Rotation *= delta;
-        }
-
+            RotateY(angleDeltaRadians.Y);
+            RotateX(angleDeltaRadians.X);
+            RotateZ(angleDeltaRadians.Z);
+        }       
+        
         public void AddPolygon(Polygon3D polygon)
         {
             if (polygon.Texture == null)
@@ -82,6 +78,9 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
                 throw new InvalidOperationException("Polygon must have a texture!");
             }
             Polygons.Add(polygon);
+
+            // Group polygons by texture. If there is no entry for the texture, 
+            // create a new list for it
             if (!PolygonsByTexture.ContainsKey(polygon.Texture))
             {
                 PolygonsByTexture[polygon.Texture] = new List<Polygon3D>();
@@ -98,15 +97,64 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             }
         }
 
-        public void BuildMeshes()
+        public void BuildMeshesFromPolygons()
         {
-            MeshesByTexture = new Dictionary<Texture2D, Mesh3D>();
-            IEnumerable<Polygon3D> transformedPolygons =
-                GetTransformedPolygons();
-
-            foreach (var polygon in transformedPolygons)
+            if (PolygonsByTexture.Count == 0)
             {
+                throw new InvalidOperationException("No polygons to build meshes from.");
             }
+            MeshesByTexture.Clear();            
+            foreach (var pbt in PolygonsByTexture)
+            {
+                var texture = pbt.Key;
+                List<Polygon3D> polygons = pbt.Value;
+                if (MeshesByTexture.ContainsKey(texture))
+                {
+                    throw new InvalidOperationException($"Mesh for texture {texture.Name} already exists.");
+                }
+
+                Mesh3D mesh = BuildMeshForTexturePolygons(polygons, texture);
+                MeshesByTexture[texture] = mesh;
+            }
+        }
+
+        private Mesh3D BuildMeshForTexturePolygons(List<Polygon3D> polygons, Texture2D texture)
+        {
+            var vertices = new List<Vertex3D>();
+            var normals = new List<Vector3>();
+            var textureUVs = new List<Vector2>();
+            var indices = new List<ushort>();
+
+            if (polygons == null || polygons.Count == 0)
+            {
+                throw new ArgumentException("Polygons cannot be null or empty.");
+            }
+
+            if (polygons.Any(p => p.Vertices.Length != 3))
+            {
+                throw new ArgumentException("All polygons must have exactly three vertices.");
+            }
+            
+            // Iterate through each polygon and extract vertices, normals, and texture coordinates
+            
+            ushort vertexOffset = 0;
+            foreach (var polygon in polygons)
+            {
+                // Transform the polygon vertices using the object's world matrix
+                Polygon3D transformedPolygon = polygon.GetTransformedCopy(WorldMatrix);
+                if (transformedPolygon == null)
+                {
+                    throw new InvalidOperationException("Transformed polygon is null.");
+                }
+                vertices.AddRange(transformedPolygon.Vertices);
+                normals.AddRange(transformedPolygon.Vertices.Select(v => v.Normal));
+                textureUVs.AddRange(transformedPolygon.Vertices.Select(v => v.TextureUV));
+                foreach (var vertex in transformedPolygon.Vertices)
+                {
+                    indices.Add(vertexOffset++);
+                }
+            }
+            return new Mesh3D(texture, vertices, normals, textureUVs, indices);
         }
     }
 }

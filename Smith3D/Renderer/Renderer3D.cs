@@ -46,9 +46,77 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
 
         }
 
-        void RenderMesh(Mesh3D mesh)
+        public void RenderObjectWithMesh(Object3D obj, Matrix world, Matrix view, Matrix projection)
         {
+            // Ensure the object has meshes built from polygons
+            // Does transformations and builds meshes if not already done
+            obj.BuildMeshesFromPolygons();
+            foreach (var mesh in obj.MeshesByTexture.Values)
+            {
+                RenderMesh(mesh, world, view, projection);
+            }
+        }
 
+        private void RenderMesh(Mesh3D mesh, Matrix world, Matrix view, Matrix projection)
+        {
+            effect.World = world;
+            effect.View = view;
+            effect.Projection = projection;
+            effect.TextureEnabled = true;
+            effect.Texture = mesh.Texture;
+            effect.VertexColorEnabled = true;
+            effect.LightingEnabled = false;
+
+            if (mesh.Texture == null)
+            {
+                effect.TextureEnabled = false;
+            }
+
+            // Validate mesh data and indices
+            foreach (int index in mesh.Indices)
+            {
+                if (index < 0 || index >= mesh.Vertices.Count)
+                    throw new InvalidOperationException($"Invalid index: {index}");
+            }
+
+            VertexPositionColorTexture[] vertexArray = new VertexPositionColorTexture[mesh.Vertices.Count];
+            for (int i = 0; i < mesh.Vertices.Count; i++)
+            {
+                var vertex = mesh.Vertices[i];
+                vertexArray[i] = new VertexPositionColorTexture(
+                    vertex.Position,
+                    vertex.Color,
+                    vertex.TextureUV);
+            }
+
+            VertexBuffer vertexBuffer = new VertexBuffer(
+                graphicsDevice,
+                VertexPositionColorTexture.VertexDeclaration,
+                vertexArray.Length,
+                BufferUsage.WriteOnly);
+
+            vertexBuffer.SetData(vertexArray);
+            // Bind vertex buffer to the graphics device
+            graphicsDevice.SetVertexBuffers(new VertexBufferBinding(vertexBuffer));
+
+            // Create index buffer from mesh indices
+            IndexBuffer indexBuffer = new IndexBuffer(
+                graphicsDevice,
+                IndexElementSize.SixteenBits,
+                mesh.Indices.Count,
+                BufferUsage.WriteOnly);
+            indexBuffer.SetData(mesh.Indices.ToArray());
+            graphicsDevice.Indices = indexBuffer;
+            // Apply effect and draw
+            foreach (EffectPass pass in effect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                graphicsDevice.DrawIndexedPrimitives(
+                    PrimitiveType.TriangleList,
+                    0,
+                    0,
+                    mesh.Indices.Count / 3);
+            }
         }
 
         public void RenderPolygon(Polygon3D polygon, Matrix world, Matrix view, Matrix projection)
