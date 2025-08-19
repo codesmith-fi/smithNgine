@@ -5,49 +5,55 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
     using Microsoft.Xna.Framework;
     using Microsoft.Xna.Framework.Graphics;
 
+    // Represents a 3D light source in the scene.
+    // This class can be extended to create different types of lights (e.g., PointLight, DirectionalLight, SpotLight).
+    // It includes properties for position, direction, color, and intensity.
+    // The Enabled property allows toggling the light on or off.
+    // The constructor initializes the light with default values or from another Light3D instance.
+    // The class can be used to manage lighting in 3D scenes, affecting how objects are rendered based on light sources.
+    // This class is designed to be flexible and can be extended for specific light types.
     public class Light3D
     {
+        public const float DefaultIntensity = 1.0f;
+        public static readonly Color DefaultColor = Color.White;
+        public const LightType DefaultLightType = LightType.Point;
+        public static readonly Vector3 DefaultPosition = Vector3.Zero;
+
         public enum LightType
         {
+            Ambient,
             Directional,
             Point,
             Spot
         }
 
-        public LightType Type { get; set; } = LightType.Point;
-        public Vector3 Position { get; set; } = Vector3.Zero;
-        public Vector3 Direction { get; set; } = Vector3.Forward;
-        public Color Color { get; set; } = Color.White;
-        public float Intensity { get; set; } = 1.0f; // Default intensity for lights
-        public float Range { get; set; } // For point and spot lights
-        public float SpotAngle { get; set; } // For spot lights
-        public float Falloff { get; set; } = 1.0f; // Default falloff for lights
+        public LightType Type { get; set; } = DefaultLightType;
+        public Vector3 Position { get; set; } = DefaultPosition;
+        public Color Color { get; set; } = DefaultColor;
+        public float Intensity { get; set; } = DefaultIntensity; // Default intensity for lights
         public bool Enabled { get; set; } = true; // Light is enabled by default
 
-        public Light3D() : this(LightType.Directional, Vector3.Zero, Vector3.Forward, Color.White, 1.0f)
+        public Light3D() : this(LightType.Ambient, DefaultPosition, DefaultColor, DefaultIntensity)
         {
-            Range = 100f;
-            SpotAngle = MathHelper.PiOver4;
-            Enabled = true;
         }
 
-        public Light3D(Light3D light) : this(light.Type, light.Position, light.Direction, light.Color, light.Intensity)
+        public Light3D(Light3D light) : this(light.Type, light.Position, light.Color, light.Intensity)
         {
-            Range = light.Range;
-            SpotAngle = light.SpotAngle;
             Enabled = light.Enabled;
         }
 
-        public Light3D(LightType type, Vector3 position, Vector3 direction, Color color, float intensity)
+        public Light3D(LightType type, Vector3 position, Color color)
+            : this(type, position, color, DefaultIntensity)
+        {
+        }
+
+        public Light3D(LightType type, Vector3 position, Color color, float intensity)
         {
             Type = type;
             Position = position;
-            Direction = direction;
             Color = color;
             Intensity = intensity;
-            Range = 100f; // Default range for point lights
-            SpotAngle = MathHelper.PiOver4; // Default spot angle
             Enabled = true;
-        }
+        }        
     }
 }
