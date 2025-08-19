@@ -36,15 +36,11 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
         {
             if (scene == null) throw new ArgumentNullException(nameof(scene), "Scene cannot be null.");
 
-            // Set camera matrices
-            effect.View = scene.Camera.ViewMatrix;
-            effect.Projection = scene.Camera.ProjectionMatrix;
-
             // Render objects
             foreach (var obj in scene.Objects)
             {
-                effect.World = Matrix.Identity;
-                RenderObjectWithMesh(obj, effect.World, effect.View, effect.Projection);
+                //                RenderObjectWithMesh(obj, Matrix.Identity, scene.Camera.ViewMatrix, scene.Camera.ProjectionMatrix);
+                RenderObjectWithMesh(obj, obj.WorldMatrix, scene.Camera.ViewMatrix, scene.Camera.ProjectionMatrix);
             }
 
             // Render lights if needed (not implemented in this example)
@@ -52,10 +48,7 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
 
         public void RenderObject(Object3D obj, Matrix world, Matrix view, Matrix projection)
         {
-            effect.World = world;
-            effect.View = view;
-            effect.Projection = projection;
-
+            if (obj == null) throw new ArgumentNullException(nameof(obj), "Object cannot be null.");
             IEnumerable<Polygon3D> transformedVertices = obj.GetTransformedPolygons();
             foreach (var polygon in transformedVertices)
             {
@@ -66,9 +59,7 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
 
         public void RenderObjectFlat(Object3D obj, Matrix world, Matrix view, Matrix projection)
         {
-            effect.World = world;
-            effect.View = view;
-            effect.Projection = projection;
+            if (obj == null) throw new ArgumentNullException(nameof(obj), "Object cannot be null.");
 
             IEnumerable<Polygon3D> transformedVertices = obj.GetTransformedPolygons();
             foreach (var polygon in transformedVertices)
@@ -209,5 +200,45 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             }
         }
 
+        public void DebugRenderAxes(Camera3D camera)
+        {
+            // Render axes for debugging
+
+            BasicEffect debugEffect = new BasicEffect(graphicsDevice)
+            {
+                VertexColorEnabled = true,
+                World = Matrix.Identity,
+                View = camera.ViewMatrix,
+                Projection = camera.ProjectionMatrix
+            };
+
+
+            float axisLength = 100f; // Length of the axes
+            VertexPositionColor[] axisVertices = new VertexPositionColor[]
+            {
+                // X axis - Red
+                new VertexPositionColor(Vector3.Zero, Color.Red),
+                new VertexPositionColor(Vector3.UnitX * axisLength, Color.Red),
+
+                // Y axis - Green
+                new VertexPositionColor(Vector3.Zero, Color.Green),
+                new VertexPositionColor(Vector3.UnitY * axisLength, Color.Green),
+
+                // Z axis - Blue
+                new VertexPositionColor(Vector3.Zero, Color.Blue),
+                new VertexPositionColor(Vector3.UnitZ * axisLength, Color.Blue),
+            };
+            
+            foreach (EffectPass pass in debugEffect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                graphicsDevice.DrawUserPrimitives(
+                    PrimitiveType.LineList,
+                    axisVertices,
+                    0,
+                    axisVertices.Length / 2
+                );
+            }            
+        }
     }
 }

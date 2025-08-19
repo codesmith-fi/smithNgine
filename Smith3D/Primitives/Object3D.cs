@@ -29,6 +29,17 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
         {
         }
 
+        public Object3D(Object3D obj)
+        {
+            if (obj == null) throw new ArgumentNullException(nameof(obj), "Object cannot be null.");
+            Position = obj.Position;
+            Rotation = obj.Rotation;
+            Scale = obj.Scale;
+            Polygons = new List<Polygon3D>(obj.Polygons);
+            PolygonsByTexture = new Dictionary<Texture2D, List<Polygon3D>>(obj.PolygonsByTexture);
+            MeshesByTexture = new Dictionary<Texture2D, Mesh3D>(obj.MeshesByTexture);
+        }
+
         public Object3D(Vector3 position, Quaternion eulerRotationRadians, Vector3 scale)
         {
             Position = position;
