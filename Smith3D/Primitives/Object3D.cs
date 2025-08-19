@@ -152,16 +152,10 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             ushort vertexOffset = 0;
             foreach (var polygon in polygons)
             {
-                // Transform the polygon vertices using the object's world matrix
-                Polygon3D transformedPolygon = polygon.GetTransformedCopy(WorldMatrix);
-                if (transformedPolygon == null)
-                {
-                    throw new InvalidOperationException("Transformed polygon is null.");
-                }
-                vertices.AddRange(transformedPolygon.Vertices);
-                normals.AddRange(transformedPolygon.Vertices.Select(v => v.Normal));
-                textureUVs.AddRange(transformedPolygon.Vertices.Select(v => v.TextureUV));
-                foreach (var vertex in transformedPolygon.Vertices)
+                vertices.AddRange(polygon.Vertices);
+                normals.AddRange(polygon.Vertices.Select(v => v.Normal));
+                textureUVs.AddRange(polygon.Vertices.Select(v => v.TextureUV));
+                foreach (var vertex in polygon.Vertices)
                 {
                     indices.Add(vertexOffset++);
                 }
