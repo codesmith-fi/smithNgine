@@ -14,14 +14,15 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             Spot
         }
 
-        public LightType Type { get; set; }
-        public Vector3 Position { get; set; }
-        public Vector3 Direction { get; set; }
-        public Color Color { get; set; }
-        public float Intensity { get; set; }
+        public LightType Type { get; set; } = LightType.Point;
+        public Vector3 Position { get; set; } = Vector3.Zero;
+        public Vector3 Direction { get; set; } = Vector3.Forward;
+        public Color Color { get; set; } = Color.White;
+        public float Intensity { get; set; } = 1.0f; // Default intensity for lights
         public float Range { get; set; } // For point and spot lights
         public float SpotAngle { get; set; } // For spot lights
-        public bool Enabled { get; set; }
+        public float Falloff { get; set; } = 1.0f; // Default falloff for lights
+        public bool Enabled { get; set; } = true; // Light is enabled by default
 
         public Light3D() : this(LightType.Directional, Vector3.Zero, Vector3.Forward, Color.White, 1.0f)
         {
