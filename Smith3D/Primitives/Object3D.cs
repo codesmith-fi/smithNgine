@@ -89,6 +89,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             {
                 throw new InvalidOperationException("Polygon must have a texture!");
             }
+            polygon.ComputeNormal();
             Polygons.Add(polygon);
 
             // Group polygons by texture. If there is no entry for the texture, 
@@ -152,13 +153,21 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             ushort vertexOffset = 0;
             foreach (var polygon in polygons)
             {
-                vertices.AddRange(polygon.Vertices);
-                normals.AddRange(polygon.Vertices.Select(v => v.Normal));
-                textureUVs.AddRange(polygon.Vertices.Select(v => v.TextureUV));
-                foreach (var vertex in polygon.Vertices)
+                foreach(var vertex in polygon.Vertices)
                 {
+                    vertices.Add(vertex);
+                    normals.Add(polygon.Normal);
+                    textureUVs.Add(vertex.TextureUV);
                     indices.Add(vertexOffset++);
                 }
+/*                vertices.AddRange(polygon.Vertices);
+                                normals.AddRange(polygon.Vertices.Select(v => v.Normal));
+                                textureUVs.AddRange(polygon.Vertices.Select(v => v.TextureUV));
+                                foreach (var vertex in polygon.Vertices)
+                                {
+                                    indices.Add(vertexOffset++);
+                                }
+                                */
             }
             return new Mesh3D(texture, vertices, normals, textureUVs, indices);
         }

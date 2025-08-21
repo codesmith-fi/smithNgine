@@ -39,7 +39,6 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             // Render objects
             foreach (var obj in scene.Objects)
             {
-                //                RenderObjectWithMesh(obj, Matrix.Identity, scene.Camera.ViewMatrix, scene.Camera.ProjectionMatrix);
                 RenderObjectWithMesh(obj, obj.WorldMatrix, scene.Camera.ViewMatrix, scene.Camera.ProjectionMatrix);
             }
 
@@ -131,6 +130,97 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             graphicsDevice.Indices = indexBuffer;
             // Apply effect and draw
             foreach (EffectPass pass in effect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                graphicsDevice.DrawIndexedPrimitives(
+                    PrimitiveType.TriangleList,
+                    0,
+                    0,
+                    mesh.Indices.Count / 3);
+            }
+        }
+
+        public void RenderSceneWithEffect(Scene3D scene, Effect e)
+        {
+            if (scene == null) throw new ArgumentNullException(nameof(scene), "Scene cannot be null.");
+            if (e == null) throw new ArgumentNullException(nameof(e), "Effect cannot be null.");
+
+            // Set effect parameters
+            e.Parameters["View"].SetValue(scene.Camera.ViewMatrix);
+            e.Parameters["Projection"].SetValue(scene.Camera.ProjectionMatrix);
+            // Render objects generating meshes from polygons
+            foreach (var obj in scene.Objects)
+            {
+                e.Parameters["World"].SetValue(obj.WorldMatrix);
+                obj.BuildMeshesFromPolygons();
+                foreach (var mesh in obj.MeshesByTexture.Values)
+                {
+                    RenderMeshWithEffect(mesh, e);
+                }
+            }
+        }
+
+        private void RenderMeshWithEffect(Mesh3D mesh, Effect e)
+        {
+            if (mesh.Texture == null)
+            {
+                throw new InvalidOperationException("Mesh texture cannot be null.");
+            }
+
+            if (e == null)
+            {
+                throw new ArgumentNullException(nameof(e), "Effect cannot be null.");
+            }
+
+            // Validate mesh data and indices
+            foreach (int index in mesh.Indices)
+            {
+                if (index < 0 || index >= mesh.Vertices.Count)
+                    throw new InvalidOperationException($"Invalid vertex index: {index}");
+            }
+
+            if (mesh.Vertices.Count == 0 || mesh.Indices.Count == 0)
+            {
+                throw new InvalidOperationException("Mesh has no vertices or indices to render.");
+            }
+
+            // Create vertex buffer from mesh vertices
+            // Convert mesh vertices to VertexPositionNormalColorTexture format
+            VertexPositionNormalColorTexture[] vertexArray = new VertexPositionNormalColorTexture[mesh.Vertices.Count];
+            for (int i = 0; i < mesh.Vertices.Count; i++)
+            {
+                var vertex = mesh.Vertices[i];
+                vertexArray[i] = new VertexPositionNormalColorTexture(
+                    vertex.Position,
+                    mesh.Normals[i],
+                    vertex.Color,
+                    vertex.TextureUV);
+            }
+
+            VertexBuffer vertexBuffer = new VertexBuffer(
+                graphicsDevice,
+                VertexPositionNormalColorTexture.VertexDeclaration,
+                vertexArray.Length,
+                BufferUsage.WriteOnly);
+
+            vertexBuffer.SetData(vertexArray);
+            // Bind vertex buffer to the graphics device
+            graphicsDevice.SetVertexBuffers(new VertexBufferBinding(vertexBuffer));
+
+            // Create index buffer from mesh indices
+            IndexBuffer indexBuffer = new IndexBuffer(
+                graphicsDevice,
+                IndexElementSize.SixteenBits,
+                mesh.Indices.Count,
+                BufferUsage.WriteOnly);
+            indexBuffer.SetData(mesh.Indices.ToArray());
+            graphicsDevice.Indices = indexBuffer;
+//            graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
+
+            // Set effect parameters
+            e.Parameters["DiffuseTexture"].SetValue(mesh.Texture);
+            // Apply effect and draw
+            foreach (EffectPass pass in e.CurrentTechnique.Passes)
             {
                 pass.Apply();
                 graphicsDevice.DrawIndexedPrimitives(
