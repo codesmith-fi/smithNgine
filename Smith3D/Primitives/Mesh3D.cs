@@ -11,7 +11,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
     {
         public List<Vertex3D> Vertices { get; set; } = new List<Vertex3D>();
         public List<Vector3> Normals { get; set; } = new List<Vector3>();
-        public List<ushort> Indices { get; set; } = new List<ushort>();
+        public List<int> Indices { get; set; } = new List<int>();
         public Texture2D Texture { get; set; } = null;
         public List<Vector2> TextureUVs { get; set; } = new List<Vector2>();
 
@@ -19,7 +19,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             List<Vertex3D> vertices,
             List<Vector3> normals = null,
             List<Vector2> textureUVs = null,
-            List<ushort> indices = null)
+            List<int> indices = null)
         {
             // If no texture is provided, set emtpty UVs list
             if (texture == null || textureUVs == null)

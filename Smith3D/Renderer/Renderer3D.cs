@@ -35,13 +35,11 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
         public void RenderScene(Scene3D scene)
         {
             if (scene == null) throw new ArgumentNullException(nameof(scene), "Scene cannot be null.");
-
             // Render objects
             foreach (var obj in scene.Objects)
             {
                 RenderObjectWithMesh(obj, obj.WorldMatrix, scene.Camera.ViewMatrix, scene.Camera.ProjectionMatrix);
             }
-
             // Render lights if needed (not implemented in this example)
         }
 
@@ -123,7 +121,7 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             // Create index buffer from mesh indices
             IndexBuffer indexBuffer = new IndexBuffer(
                 graphicsDevice,
-                IndexElementSize.SixteenBits,
+                IndexElementSize.ThirtyTwoBits,
                 mesh.Indices.Count,
                 BufferUsage.WriteOnly);
             indexBuffer.SetData(mesh.Indices.ToArray());
@@ -210,7 +208,7 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             // Create index buffer from mesh indices
             IndexBuffer indexBuffer = new IndexBuffer(
                 graphicsDevice,
-                IndexElementSize.SixteenBits,
+                IndexElementSize.ThirtyTwoBits,
                 mesh.Indices.Count,
                 BufferUsage.WriteOnly);
             indexBuffer.SetData(mesh.Indices.ToArray());

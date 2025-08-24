@@ -110,13 +110,20 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             }
         }
 
+        public void ClearPolygons()
+        {
+            Polygons.Clear();
+            PolygonsByTexture.Clear();
+            MeshesByTexture.Clear();
+        }
+
         public void BuildMeshesFromPolygons()
         {
             if (PolygonsByTexture.Count == 0)
             {
                 throw new InvalidOperationException("No polygons to build meshes from.");
             }
-            MeshesByTexture.Clear();            
+            MeshesByTexture.Clear();
             foreach (var pbt in PolygonsByTexture)
             {
                 var texture = pbt.Key;
@@ -136,7 +143,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             var vertices = new List<Vertex3D>();
             var normals = new List<Vector3>();
             var textureUVs = new List<Vector2>();
-            var indices = new List<ushort>();
+            var indices = new List<int>();
 
             if (polygons == null || polygons.Count == 0)
             {
@@ -150,7 +157,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             
             // Iterate through each polygon and extract vertices, normals, and texture coordinates
             
-            ushort vertexOffset = 0;
+            int vertexOffset = 0;
             foreach (var polygon in polygons)
             {
                 foreach(var vertex in polygon.Vertices)
@@ -160,14 +167,6 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
                     textureUVs.Add(vertex.TextureUV);
                     indices.Add(vertexOffset++);
                 }
-/*                vertices.AddRange(polygon.Vertices);
-                                normals.AddRange(polygon.Vertices.Select(v => v.Normal));
-                                textureUVs.AddRange(polygon.Vertices.Select(v => v.TextureUV));
-                                foreach (var vertex in polygon.Vertices)
-                                {
-                                    indices.Add(vertexOffset++);
-                                }
-                                */
             }
             return new Mesh3D(texture, vertices, normals, textureUVs, indices);
         }
