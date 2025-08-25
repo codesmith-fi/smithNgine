@@ -8,20 +8,27 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
     using Codesmith.SmithNgine.Smith3D.Primitives;
     public class Object3D
     {
+        private Light3D.LightType lightType = Light3D.LightType.None;
         public List<Polygon3D> Polygons { get; private set; } = new List<Polygon3D>();
         public Dictionary<Texture2D, List<Polygon3D>> PolygonsByTexture { get; private set; } = new Dictionary<Texture2D, List<Polygon3D>>();
         public Dictionary<Texture2D, Mesh3D> MeshesByTexture { get; private set; } = new Dictionary<Texture2D, Mesh3D>();
         public Vector3 Position { get; set; } = Vector3.Zero;
         public Quaternion Rotation { get; set; } = Quaternion.Identity;
         public Vector3 Scale { get; set; } = Vector3.One;
+        public Light3D.LightType LightType
+        {
+            get => lightType;
+            set => SetLightType(value);
+        }
+
         public Matrix WorldMatrix
         {
             get
             {
-            return 
-                Matrix.CreateScale(Scale) *
-                Matrix.CreateFromQuaternion(Rotation) * 
-                Matrix.CreateTranslation(Position);
+                return
+                    Matrix.CreateScale(Scale) *
+                    Matrix.CreateFromQuaternion(Rotation) *
+                    Matrix.CreateTranslation(Position);
             }
         }
 
@@ -56,6 +63,15 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
                 eulerRotationRadians.Z
             );
             Scale = scale;
+        }
+
+        public void SetLightType(Light3D.LightType lightType)
+        {
+            this.lightType = lightType;
+            foreach (var polygon in Polygons)
+            {
+                polygon.LightType = lightType;
+            }
         }
 
         public void RotateY(float angleRadians)

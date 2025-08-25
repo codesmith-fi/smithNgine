@@ -8,10 +8,10 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
 
     public struct VertexPositionNormalColorTexture : IVertexType
     {
-        public Vector3 Position;
-        public Vector3 Normal;
-        public Color Color;
-        public Vector2 TextureUV;
+        public Vector3 Position { get; set; }
+        public Vector3 Normal { get; set; }
+        public Color Color { get; set; }
+        public Vector2 TextureUV { get; set; }
 
         public static readonly VertexDeclaration VertexDeclaration = new VertexDeclaration
         (
@@ -42,7 +42,14 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
         public Vertex3D[] Vertices => vertices;
         public Texture2D Texture { get; set; }
         public Vector3 Normal { get; private set; }
+        public Light3D.LightType LightType { get; set; }
 
+        public Color Color
+        {
+            get => vertices.Length > 0 ? vertices[0].Color : Color.White;
+            set => SetColor(value);
+        }
+        
         public Polygon3D(Vertex3D[] vertices, Texture2D texture)
         {
             if (vertices.Length != 3)

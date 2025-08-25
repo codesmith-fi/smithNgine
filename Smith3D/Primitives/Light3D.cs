@@ -21,6 +21,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
 
         public enum LightType
         {
+            None,
             Ambient,
             Directional,
             Point,
