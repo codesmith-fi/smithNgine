@@ -55,11 +55,48 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             TextureUVs = textureUVs;
 
         }
-
-        public void BuildBuffers(GraphicsDevice device)
+        public static void CombineMeshes(Mesh3D fromMesh, Mesh3D toMesh) 
         {
-            // Create and fill VertexBuffer and IndexBuffer here
+            if (fromMesh.Texture != toMesh.Texture)
+            {
+                throw new ArgumentException("Cannot combine meshes with different textures.");
+            }
+
+            int vertexOffset = toMesh.Vertices.Count;
+
+            toMesh.Vertices.AddRange(fromMesh.Vertices);
+            toMesh.Normals.AddRange(fromMesh.Normals);
+            toMesh.TextureUVs.AddRange(fromMesh.TextureUVs);
+
+            foreach (var index in fromMesh.Indices)
+            {
+                toMesh.Indices.Add(index + vertexOffset);
+            }
         }
 
+        public static Mesh3D MergeMeshes(Mesh3D mesh1, Mesh3D mesh2)
+        {
+            if (mesh1.Texture != mesh2.Texture)
+            {
+                throw new ArgumentException("Cannot merge meshes with different textures.");
+            }
+
+            var vertices = new List<Vertex3D>(mesh1.Vertices);
+            var normals = new List<Vector3>(mesh1.Normals);
+            var textureUVs = new List<Vector2>(mesh1.TextureUVs);
+            var indices = new List<int>(mesh1.Indices);
+
+            int vertexOffset = vertices.Count;
+
+            foreach (var vertex in mesh2.Vertices)
+            {
+                vertices.Add(vertex);
+                normals.Add(vertex.Normal);
+                textureUVs.Add(vertex.TextureUV);
+                indices.Add(vertexOffset++);
+            }
+
+            return new Mesh3D(mesh1.Texture, vertices, normals, textureUVs, indices);
+        }   
     }
 }

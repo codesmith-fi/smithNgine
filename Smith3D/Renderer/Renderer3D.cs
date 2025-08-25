@@ -43,36 +43,23 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             // Render lights if needed (not implemented in this example)
         }
 
-        public void RenderObject(Object3D obj, Matrix world, Matrix view, Matrix projection)
+        public void RenderScene(Scene3D scene, Effect e)
         {
-            if (obj == null) throw new ArgumentNullException(nameof(obj), "Object cannot be null.");
-            IEnumerable<Polygon3D> transformedVertices = obj.GetTransformedPolygons();
-            foreach (var polygon in transformedVertices)
+            if (scene == null) throw new ArgumentNullException(nameof(scene), "Scene cannot be null.");
+            if (e == null) throw new ArgumentNullException(nameof(e), "Effect cannot be null.");
+
+            // Set effect parameters
+            e.Parameters["View"].SetValue(scene.Camera.ViewMatrix);
+            e.Parameters["Projection"].SetValue(scene.Camera.ProjectionMatrix);
+            // Render objects generating meshes from polygons
+            foreach (var obj in scene.Objects)
             {
-                RenderPolygon(polygon, world, view, projection);
-            }
-
-        }
-
-        public void RenderObjectFlat(Object3D obj, Matrix world, Matrix view, Matrix projection)
-        {
-            if (obj == null) throw new ArgumentNullException(nameof(obj), "Object cannot be null.");
-
-            IEnumerable<Polygon3D> transformedVertices = obj.GetTransformedPolygons();
-            foreach (var polygon in transformedVertices)
-            {
-                RenderPolygonFlat(polygon, world, view, projection);
-            }
-        }
-
-        public void RenderObjectWithMesh(Object3D obj, Matrix world, Matrix view, Matrix projection)
-        {
-            // Ensure the object has meshes built from polygons
-            // Does transformations and builds meshes if not already done
-            obj.BuildMeshesFromPolygons();
-            foreach (var mesh in obj.MeshesByTexture.Values)
-            {
-                RenderMesh(mesh, world, view, projection);
+                e.Parameters["World"].SetValue(obj.WorldMatrix);
+                obj.UpdateObject();
+                foreach (var mesh in obj.MeshesByTexture.Values)
+                {
+                    RenderMesh(mesh, e);
+                }
             }
         }
 
@@ -138,27 +125,18 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             }
         }
 
-        public void RenderSceneWithEffect(Scene3D scene, Effect e)
+        public void RenderObjectWithMesh(Object3D obj, Matrix world, Matrix view, Matrix projection)
         {
-            if (scene == null) throw new ArgumentNullException(nameof(scene), "Scene cannot be null.");
-            if (e == null) throw new ArgumentNullException(nameof(e), "Effect cannot be null.");
-
-            // Set effect parameters
-            e.Parameters["View"].SetValue(scene.Camera.ViewMatrix);
-            e.Parameters["Projection"].SetValue(scene.Camera.ProjectionMatrix);
-            // Render objects generating meshes from polygons
-            foreach (var obj in scene.Objects)
+            // Ensure the object has meshes built from polygons
+            // Does transformations and builds meshes if not already done
+            obj.UpdateObject();
+            foreach (var mesh in obj.MeshesByTexture.Values)
             {
-                e.Parameters["World"].SetValue(obj.WorldMatrix);
-                obj.BuildMeshesFromPolygons();
-                foreach (var mesh in obj.MeshesByTexture.Values)
-                {
-                    RenderMeshWithEffect(mesh, e);
-                }
+                RenderMesh(mesh, world, view, projection);
             }
         }
 
-        private void RenderMeshWithEffect(Mesh3D mesh, Effect e)
+        private void RenderMesh(Mesh3D mesh, Effect e)
         {
             if (mesh.Texture == null)
             {
@@ -213,7 +191,7 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
                 BufferUsage.WriteOnly);
             indexBuffer.SetData(mesh.Indices.ToArray());
             graphicsDevice.Indices = indexBuffer;
-//            graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
+            //            graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
 
             // Set effect parameters
             e.Parameters["DiffuseTexture"].SetValue(mesh.Texture);
@@ -226,6 +204,28 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
                     0,
                     0,
                     mesh.Indices.Count / 3);
+            }
+        }
+
+        public void RenderObject(Object3D obj, Matrix world, Matrix view, Matrix projection)
+        {
+            if (obj == null) throw new ArgumentNullException(nameof(obj), "Object cannot be null.");
+            IEnumerable<Polygon3D> transformedVertices = obj.GetTransformedPolygons();
+            foreach (var polygon in transformedVertices)
+            {
+                RenderPolygon(polygon, world, view, projection);
+            }
+
+        }
+
+        public void RenderObjectFlat(Object3D obj, Matrix world, Matrix view, Matrix projection)
+        {
+            if (obj == null) throw new ArgumentNullException(nameof(obj), "Object cannot be null.");
+
+            IEnumerable<Polygon3D> transformedVertices = obj.GetTransformedPolygons();
+            foreach (var polygon in transformedVertices)
+            {
+                RenderPolygonFlat(polygon, world, view, projection);
             }
         }
 

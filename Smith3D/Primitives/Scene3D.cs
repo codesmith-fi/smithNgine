@@ -55,7 +55,8 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             foreach (var obj in Objects)
             {
                 // Create or update the object's meshes from its polygons
-                obj.BuildMeshesFromPolygons();
+                IEnumerable<Polygon3D> transformedVertices = obj.GetTransformedPolygons();
+                obj.UpdateObject();
 
                 // Merge the object's meshes into the scene's meshes
                 foreach (var mesh in obj.MeshesByTexture)
@@ -71,54 +72,10 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
                         // This can be optimized further if needed
                         //   -> instead of creating a new mesh each time we could modify existing mesh
                         //                        MeshesByTexture[mesh.Key] = MergeMeshes(existingMesh, mesh.Value);
-                        CombineMeshes(mesh.Value, existingMesh);
+                        Mesh3D.CombineMeshes(mesh.Value, existingMesh);
                     }
                 }
             }
-        }
-        
-        private void CombineMeshes(Mesh3D fromMesh, Mesh3D toMesh) 
-        {
-            if (fromMesh.Texture != toMesh.Texture)
-            {
-                throw new ArgumentException("Cannot combine meshes with different textures.");
-            }
-
-            int vertexOffset = toMesh.Vertices.Count;
-
-            toMesh.Vertices.AddRange(fromMesh.Vertices);
-            toMesh.Normals.AddRange(fromMesh.Normals);
-            toMesh.TextureUVs.AddRange(fromMesh.TextureUVs);
-
-            foreach (var index in fromMesh.Indices)
-            {
-                toMesh.Indices.Add(index + vertexOffset);
-            }
-        }
-
-        private Mesh3D MergeMeshes(Mesh3D mesh1, Mesh3D mesh2)
-        {
-            if (mesh1.Texture != mesh2.Texture)
-            {
-                throw new ArgumentException("Cannot merge meshes with different textures.");
-            }
-
-            var vertices = new List<Vertex3D>(mesh1.Vertices);
-            var normals = new List<Vector3>(mesh1.Normals);
-            var textureUVs = new List<Vector2>(mesh1.TextureUVs);
-            var indices = new List<int>(mesh1.Indices);
-
-            int vertexOffset = vertices.Count;
-
-            foreach (var vertex in mesh2.Vertices)
-            {
-                vertices.Add(vertex);
-                normals.Add(vertex.Normal);
-                textureUVs.Add(vertex.TextureUV);
-                indices.Add(vertexOffset++);
-            }
-
-            return new Mesh3D(mesh1.Texture, vertices, normals, textureUVs, indices);
-        }   
+        }        
     }
 }

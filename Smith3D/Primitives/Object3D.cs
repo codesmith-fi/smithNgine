@@ -117,7 +117,37 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             MeshesByTexture.Clear();
         }
 
-        public void BuildMeshesFromPolygons()
+        // Builds meshes from polygons, applying the object's world transformation
+        public void BuildMeshes()
+        {
+            if (PolygonsByTexture.Count == 0)
+            {
+                throw new InvalidOperationException("No polygons to build meshes from.");
+            }
+            MeshesByTexture.Clear();
+            Matrix transform = WorldMatrix;
+            foreach (var pbt in PolygonsByTexture)
+            {
+                var texture = pbt.Key;
+                List<Polygon3D> transformedPolygons = new List<Polygon3D>();
+                foreach (var polygon in pbt.Value)
+                {
+                    transformedPolygons.Add(polygon.GetTransformedCopy(transform));
+                }
+
+                if (MeshesByTexture.ContainsKey(texture))
+                {
+                    throw new InvalidOperationException($"Mesh for texture {texture.Name} already exists.");
+                }
+
+                Mesh3D mesh = BuildMeshForTexturePolygons(transformedPolygons, texture);
+                MeshesByTexture[texture] = mesh;
+            }
+        }
+
+        // Updates existing meshes from current polygons and transformation
+        // This can be called if polygons or transformation have changed
+        public void UpdateObject()
         {
             if (PolygonsByTexture.Count == 0)
             {
