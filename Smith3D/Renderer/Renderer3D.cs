@@ -13,13 +13,13 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
     public class Renderer3D
     {
         private GraphicsDevice graphicsDevice;
-        private BasicEffect effect;
+        private BasicEffect basicEffect;
 
         public Renderer3D(GraphicsDevice device)
         {
             graphicsDevice = device;
 
-            effect = new BasicEffect(graphicsDevice)
+            basicEffect = new BasicEffect(graphicsDevice)
             {
                 VertexColorEnabled = true,
                 LightingEnabled = false,
@@ -27,9 +27,9 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             };
 
             // Optional: Set default lighting
-            effect.DirectionalLight0.Enabled = true;
-            effect.DirectionalLight0.Direction = new Vector3(0, -1, -1);
-            effect.DirectionalLight0.DiffuseColor = new Vector3(1, 1, 1);
+            basicEffect.DirectionalLight0.Enabled = true;
+            basicEffect.DirectionalLight0.Direction = new Vector3(0, -1, -1);
+            basicEffect.DirectionalLight0.DiffuseColor = new Vector3(1, 1, 1);
         }
 
         public void RenderScene(Scene3D scene)
@@ -38,44 +38,88 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             // Render objects
             foreach (var obj in scene.Objects)
             {
-                RenderObjectWithMesh(obj, obj.WorldMatrix, scene.Camera.ViewMatrix, scene.Camera.ProjectionMatrix);
+                RenderObjectWithMesh(obj, obj.WorldMatrix,
+                    scene.Camera.ViewMatrix, scene.Camera.ProjectionMatrix);
+            }
+            // Render lights if needed (not implemented in this example)
+        }
+        
+        public void RenderScene(Scene3D scene, Effect customEffect)
+        {
+            if (scene == null) throw new ArgumentNullException(nameof(scene), "Scene cannot be null.");
+            if (customEffect == null) throw new ArgumentNullException(nameof(customEffect), "Effect cannot be null.");
+
+            // Render objects
+            foreach (var obj in scene.Objects)
+            {
+                RenderObjectWithMesh(customEffect, obj, obj.WorldMatrix,
+                    scene.Camera.ViewMatrix, scene.Camera.ProjectionMatrix);
             }
             // Render lights if needed (not implemented in this example)
         }
 
-        public void RenderScene(Scene3D scene, Effect e)
-        {
-            if (scene == null) throw new ArgumentNullException(nameof(scene), "Scene cannot be null.");
-            if (e == null) throw new ArgumentNullException(nameof(e), "Effect cannot be null.");
+        /* Future optimization: Render entire scene with single effect, but how to handle WorldMatrix in this case
+           since the effect.World needs to be set per object and meshes are built for the whole scene 
+           and then they are all combined into one big mesh per texture (loosing WorldMatrix per object).
+                                public void RenderScene(Scene3D scene, Effect e)
+                                {
+                                    if (scene == null) throw new ArgumentNullException(nameof(scene), "Scene cannot be null.");
+                                    if (e == null) throw new ArgumentNullException(nameof(e), "Effect cannot be null.");
 
-            // Set effect parameters
-            e.Parameters["View"].SetValue(scene.Camera.ViewMatrix);
-            e.Parameters["Projection"].SetValue(scene.Camera.ProjectionMatrix);
-            // Render objects generating meshes from polygons
-            foreach (var obj in scene.Objects)
+                                    // Set effect parameters
+                                    e.Parameters["View"].SetValue(scene.Camera.ViewMatrix);
+                                    e.Parameters["Projection"].SetValue(scene.Camera.ProjectionMatrix);
+                                    // Render objects generating meshes from polygons
+                                    foreach (var obj in scene.Objects)
+                                    {
+                                        e.Parameters["World"].SetValue(obj.WorldMatrix);
+                                        obj.UpdateObject();
+                                        foreach (var mesh in obj.MeshesByTexture.Values)
+                                        {
+                                            RenderMesh(mesh, e);
+                                        }
+                                    }
+                                }
+                        */
+
+        public void RenderObjectWithMesh(Effect customEffect, Object3D obj, Matrix world, Matrix view, Matrix projection)
+        {
+            // Ensure the object has meshes built from polygons
+            // Does transformations and builds meshes if not already done
+            obj.UpdateObject();
+            foreach (var mesh in obj.MeshesByTexture.Values)
             {
-                e.Parameters["World"].SetValue(obj.WorldMatrix);
-                obj.UpdateObject();
-                foreach (var mesh in obj.MeshesByTexture.Values)
-                {
-                    RenderMesh(mesh, e);
-                }
+                RenderMesh(customEffect, mesh, world, view, projection);
             }
         }
 
-        private void RenderMesh(Mesh3D mesh, Matrix world, Matrix view, Matrix projection)
+        public void RenderObjectWithMesh(Object3D obj, Matrix world, Matrix view, Matrix projection)
         {
-            effect.World = world;
-            effect.View = view;
-            effect.Projection = projection;
-            effect.TextureEnabled = true;
-            effect.Texture = mesh.Texture;
-            effect.VertexColorEnabled = true;
-            effect.LightingEnabled = false;
-
-            if (mesh.Texture == null)
+            // Ensure the object has meshes built from polygons
+            // Does transformations and builds meshes if not already done
+            obj.UpdateObject();
+            foreach (var mesh in obj.MeshesByTexture.Values)
             {
-                effect.TextureEnabled = false;
+                RenderMesh(mesh, world, view, projection);
+            }
+        }
+
+        private void RenderMesh(Effect customEffect, Mesh3D mesh, Matrix world, Matrix view, Matrix projection)
+        {
+            if (customEffect == null) throw new ArgumentNullException(nameof(customEffect), "Effect cannot be null.");
+            if (mesh == null) throw new ArgumentNullException(nameof(mesh), "Mesh cannot be null.");
+
+            customEffect.Parameters["View"].SetValue(view);
+            customEffect.Parameters["Projection"].SetValue(projection);
+            customEffect.Parameters["World"].SetValue(world);
+
+            if (mesh.Texture != null)
+            {
+                customEffect.Parameters["Texture"].SetValue(mesh.Texture);
+                customEffect.CurrentTechnique = customEffect.Techniques["Textured"];            
+            } else
+            {
+                customEffect.CurrentTechnique = customEffect.Techniques["Colored"];
             }
 
             // Validate mesh data and indices
@@ -114,7 +158,7 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             indexBuffer.SetData(mesh.Indices.ToArray());
             graphicsDevice.Indices = indexBuffer;
             // Apply effect and draw
-            foreach (EffectPass pass in effect.CurrentTechnique.Passes)
+            foreach (EffectPass pass in customEffect.CurrentTechnique.Passes)
             {
                 pass.Apply();
                 graphicsDevice.DrawIndexedPrimitives(
@@ -125,57 +169,41 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             }
         }
 
-        public void RenderObjectWithMesh(Object3D obj, Matrix world, Matrix view, Matrix projection)
+        private void RenderMesh(Mesh3D mesh, Matrix world, Matrix view, Matrix projection)
         {
-            // Ensure the object has meshes built from polygons
-            // Does transformations and builds meshes if not already done
-            obj.UpdateObject();
-            foreach (var mesh in obj.MeshesByTexture.Values)
-            {
-                RenderMesh(mesh, world, view, projection);
-            }
-        }
+            basicEffect.World = world;
+            basicEffect.View = view;
+            basicEffect.Projection = projection;
+            basicEffect.TextureEnabled = true;
+            basicEffect.Texture = mesh.Texture;
+            basicEffect.VertexColorEnabled = true;
+            basicEffect.LightingEnabled = false;
 
-        private void RenderMesh(Mesh3D mesh, Effect e)
-        {
             if (mesh.Texture == null)
             {
-                throw new InvalidOperationException("Mesh texture cannot be null.");
-            }
-
-            if (e == null)
-            {
-                throw new ArgumentNullException(nameof(e), "Effect cannot be null.");
+                basicEffect.TextureEnabled = false;
             }
 
             // Validate mesh data and indices
             foreach (int index in mesh.Indices)
             {
                 if (index < 0 || index >= mesh.Vertices.Count)
-                    throw new InvalidOperationException($"Invalid vertex index: {index}");
+                    throw new InvalidOperationException($"Invalid index: {index}");
             }
 
-            if (mesh.Vertices.Count == 0 || mesh.Indices.Count == 0)
-            {
-                throw new InvalidOperationException("Mesh has no vertices or indices to render.");
-            }
-
-            // Create vertex buffer from mesh vertices
-            // Convert mesh vertices to VertexPositionNormalColorTexture format
-            VertexPositionNormalColorTexture[] vertexArray = new VertexPositionNormalColorTexture[mesh.Vertices.Count];
+            VertexPositionColorTexture[] vertexArray = new VertexPositionColorTexture[mesh.Vertices.Count];
             for (int i = 0; i < mesh.Vertices.Count; i++)
             {
                 var vertex = mesh.Vertices[i];
-                vertexArray[i] = new VertexPositionNormalColorTexture(
+                vertexArray[i] = new VertexPositionColorTexture(
                     vertex.Position,
-                    mesh.Normals[i],
                     vertex.Color,
                     vertex.TextureUV);
             }
 
             VertexBuffer vertexBuffer = new VertexBuffer(
                 graphicsDevice,
-                VertexPositionNormalColorTexture.VertexDeclaration,
+                VertexPositionColorTexture.VertexDeclaration,
                 vertexArray.Length,
                 BufferUsage.WriteOnly);
 
@@ -191,12 +219,8 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
                 BufferUsage.WriteOnly);
             indexBuffer.SetData(mesh.Indices.ToArray());
             graphicsDevice.Indices = indexBuffer;
-            //            graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
-
-            // Set effect parameters
-            e.Parameters["DiffuseTexture"].SetValue(mesh.Texture);
             // Apply effect and draw
-            foreach (EffectPass pass in e.CurrentTechnique.Passes)
+            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
             {
                 pass.Apply();
                 graphicsDevice.DrawIndexedPrimitives(
@@ -206,6 +230,7 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
                     mesh.Indices.Count / 3);
             }
         }
+
 
         public void RenderObject(Object3D obj, Matrix world, Matrix view, Matrix projection)
         {
@@ -232,13 +257,13 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
         public void RenderPolygon(Polygon3D polygon, Matrix world, Matrix view, Matrix projection)
         {
             // Set transformation matrices
-            effect.World = world;
-            effect.View = view;
-            effect.Projection = projection;
+            basicEffect.World = world;
+            basicEffect.View = view;
+            basicEffect.Projection = projection;
 
-            effect.Texture = polygon.Texture;
-            effect.VertexColorEnabled = true;
-            effect.TextureEnabled = true;
+            basicEffect.Texture = polygon.Texture;
+            basicEffect.VertexColorEnabled = true;
+            basicEffect.TextureEnabled = true;
 
             // Convert polygon to renderable vertices
             VertexPositionColorTexture[] vertexData = polygon.ToVertexPositionColorTextureArray();
@@ -253,7 +278,7 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             graphicsDevice.SetVertexBuffer(vertexBuffer);
 
             // Apply effect and draw
-            foreach (EffectPass pass in effect.CurrentTechnique.Passes)
+            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
             {
                 pass.Apply();
                 graphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, 1);
@@ -263,10 +288,10 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
         public void RenderPolygonFlat(Polygon3D polygon, Matrix world, Matrix view, Matrix projection)
         {
             // Set transformation matrices
-            effect.World = world;
-            effect.View = view;
-            effect.Projection = projection;
-            effect.VertexColorEnabled = true;
+            basicEffect.World = world;
+            basicEffect.View = view;
+            basicEffect.Projection = projection;
+            basicEffect.VertexColorEnabled = true;
 
             VertexPositionColor[] vertexData = polygon.ToVertexPositionColorArray();
             // Create and bind vertex buffer
@@ -281,7 +306,7 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             graphicsDevice.SetVertexBuffer(vertexBuffer);
 
             // Apply effect and draw
-            foreach (EffectPass pass in effect.CurrentTechnique.Passes)
+            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
             {
                 pass.Apply();
                 graphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, 1);
