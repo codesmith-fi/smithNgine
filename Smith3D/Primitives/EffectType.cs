@@ -9,7 +9,9 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
     {
         BasicColor,
         BasicTexture,
+        BasicColorTexture,
         LitTexture,
-        LitVertexColor
+        LitVertexColor,
+        LitColorTexture
     }
 }

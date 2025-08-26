@@ -8,17 +8,19 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
     using Codesmith.SmithNgine.Smith3D.Primitives;
     public class Object3D
     {
-        private Light3D.LightType lightType = Light3D.LightType.None;
+        private EffectType effectType = EffectType.LitVertexColor;
         public List<Polygon3D> Polygons { get; private set; } = new List<Polygon3D>();
         public Dictionary<Texture2D, List<Polygon3D>> PolygonsByTexture { get; private set; } = new Dictionary<Texture2D, List<Polygon3D>>();
         public Dictionary<Texture2D, Mesh3D> MeshesByTexture { get; private set; } = new Dictionary<Texture2D, Mesh3D>();
         public Vector3 Position { get; set; } = Vector3.Zero;
         public Quaternion Rotation { get; set; } = Quaternion.Identity;
         public Vector3 Scale { get; set; } = Vector3.One;
-        public Light3D.LightType LightType
+        // Effect type to use when rendering the object
+        // Setting this will propagate the effect type to all polygons in the object
+        public EffectType EffectType
         {
-            get => lightType;
-            set => SetLightType(value);
+            get => effectType;
+            set => SetEffect(value);
         }
 
         public Matrix WorldMatrix
@@ -65,12 +67,12 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             Scale = scale;
         }
 
-        public void SetLightType(Light3D.LightType lightType)
+        public void SetEffect(EffectType effect)
         {
-            this.lightType = lightType;
+            effectType = effect; 
             foreach (var polygon in Polygons)
             {
-                polygon.LightType = lightType;
+                polygon.EffectType = effect;
             }
         }
 

@@ -14,6 +14,8 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
     {
         private GraphicsDevice graphicsDevice;
         private BasicEffect basicEffect;
+        // Map to hold all different supported effects for rendering
+        private readonly Dictionary<EffectType, Effect> effectMap = new();
 
         public Renderer3D(GraphicsDevice device)
         {
@@ -30,6 +32,18 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             basicEffect.DirectionalLight0.Enabled = true;
             basicEffect.DirectionalLight0.Direction = new Vector3(0, -1, -1);
             basicEffect.DirectionalLight0.DiffuseColor = new Vector3(1, 1, 1);
+        }
+
+        public void RegisterEffect(EffectType type, Effect effect)
+        {
+            effectMap[type] = effect;
+        }
+
+        public Effect GetEffect(EffectType type)
+        {
+            if (!effectMap.TryGetValue(type, out var effect))
+                throw new InvalidOperationException($"Effect not registered for type: {type}");
+            return effect;
         }
 
         public void RenderScene(Scene3D scene)

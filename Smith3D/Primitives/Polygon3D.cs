@@ -4,7 +4,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
 //    using Microsoft.Xna.Framework.Graphics;
     using Microsoft.Xna.Framework;
     using Codesmith.SmithNgine.Smith3D.Primitives;
-    using Codesmith.SmithNgine.Smith3D.Primitives.VertexTypes;
+    using Codesmith.SmithNgine.Smith3D.Primitives.VertexTypes;  
     using System.Linq;
     using Microsoft.Xna.Framework.Graphics;
 
@@ -18,7 +18,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
         public Vertex3D[] Vertices => vertices;
         public Texture2D Texture { get; set; }
         public Vector3 Normal { get; private set; }
-        public Light3D.LightType LightType { get; set; }
+        public EffectType EffectType { get; set; }
 
         public Color Color
         {
