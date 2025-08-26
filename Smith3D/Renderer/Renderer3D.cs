@@ -6,16 +6,19 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
     using Microsoft.Xna.Framework.Graphics;
     using System.Collections.Generic;
     using Codesmith.SmithNgine.Smith3D.Primitives;
+    using Codesmith.SmithNgine.Smith3D.Renderer.RenderEffect;
 
     /// <summary>
     /// Renderer class for rendering 3D objects in the game.
     /// </summary>
-    public class Renderer3D
+
+    public class Renderer3D : IEffectHandler
     {
         private GraphicsDevice graphicsDevice;
         private BasicEffect basicEffect;
         // Map to hold all different supported effects for rendering
-        private readonly Dictionary<EffectType, Effect> effectMap = new();
+        private readonly Dictionary<EffectType, Effect> _effectMap = new();
+        private readonly Dictionary<EffectType, EffectParameters> _parameterMap = new();
 
         public Renderer3D(GraphicsDevice device)
         {
@@ -34,16 +37,40 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             basicEffect.DirectionalLight0.DiffuseColor = new Vector3(1, 1, 1);
         }
 
-        public void RegisterEffect(EffectType type, Effect effect)
+        public void RegisterEffect<TParameters>(EffectType type, Effect effect)
+            where TParameters : EffectParameters, new()
         {
-            effectMap[type] = effect;
+            _effectMap[type] = effect;
         }
 
-        public Effect GetEffect(EffectType type)
+        /// <summary>
+        /// Attempts to retrieve the effect associated with the given type.
+        /// </summary>
+        public bool TryGetEffect(EffectType type, out Effect effect)
         {
-            if (!effectMap.TryGetValue(type, out var effect))
-                throw new InvalidOperationException($"Effect not registered for type: {type}");
-            return effect;
+            if (!_effectMap.TryGetValue(type, out var e))
+            {
+                effect = null;
+                return false;
+            }
+            else
+            {
+                effect = e;
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Applies the given parameters to the effect associated with the type.
+        /// </summary>
+        public bool ApplyParameters(EffectType type, EffectParameters parameters)
+        {
+            if (!_effectMap.TryGetValue(type, out var effect))
+            {
+                return false;
+            }
+            parameters.ApplyTo(effect);
+            return false;
         }
 
         public void RenderScene(Scene3D scene)
@@ -57,7 +84,7 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             }
             // Render lights if needed (not implemented in this example)
         }
-        
+
         public void RenderScene(Scene3D scene, Effect customEffect)
         {
             if (scene == null) throw new ArgumentNullException(nameof(scene), "Scene cannot be null.");
@@ -131,11 +158,12 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
 
             if (mesh.Texture != null)
             {
-                customEffect.Parameters["Texture"].SetValue(mesh.Texture);               
-                customEffect.CurrentTechnique = customEffect.Techniques["Textured"];            
-//                customEffect.CurrentTechnique = customEffect.Techniques["TexturedPointLight"];            
+                customEffect.Parameters["Texture"].SetValue(mesh.Texture);
+                customEffect.CurrentTechnique = customEffect.Techniques["Textured"];
+                //                customEffect.CurrentTechnique = customEffect.Techniques["TexturedPointLight"];            
 
-            } else
+            }
+            else
             {
                 customEffect.CurrentTechnique = customEffect.Techniques["Colored"];
             }
@@ -359,7 +387,7 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
                 new VertexPositionColor(Vector3.Zero, Color.Blue),
                 new VertexPositionColor(Vector3.UnitZ * axisLength, Color.Blue),
             };
-            
+
             foreach (EffectPass pass in debugEffect.CurrentTechnique.Passes)
             {
                 pass.Apply();
@@ -369,7 +397,7 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
                     0,
                     axisVertices.Length / 2
                 );
-            }            
+            }
         }
     }
 }
