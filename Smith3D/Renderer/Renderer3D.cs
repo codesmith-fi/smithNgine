@@ -115,8 +115,10 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
 
             if (mesh.Texture != null)
             {
-                customEffect.Parameters["Texture"].SetValue(mesh.Texture);
+                customEffect.Parameters["Texture"].SetValue(mesh.Texture);               
                 customEffect.CurrentTechnique = customEffect.Techniques["Textured"];            
+//                customEffect.CurrentTechnique = customEffect.Techniques["TexturedPointLight"];            
+
             } else
             {
                 customEffect.CurrentTechnique = customEffect.Techniques["Colored"];

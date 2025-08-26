@@ -97,8 +97,17 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             RotateX(angleDeltaRadians.X);
             RotateY(angleDeltaRadians.Y);
             RotateZ(angleDeltaRadians.Z);
-        }       
+        }
 
+        // Adds a polygon to the object and groups it by its texture.
+        // This grouping is used when building meshes during rendering.
+        // Also computes the polygon normal
+        //
+        // Future note for Optimization:
+        // Consider merging polygons that share the same plane and texture into larger polygons.
+        // This can reduce the number of polygons and improve rendering performance.
+        // One solution could be to keep a separate "unique vertex" list here and utilize those 
+        // vertices later when building meshes.
         public void AddPolygon(Polygon3D polygon)
         {
             if (polygon.Texture == null)
