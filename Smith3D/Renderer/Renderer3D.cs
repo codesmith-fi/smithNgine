@@ -48,16 +48,11 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
         /// </summary>
         public bool TryGetEffect(EffectType type, out Effect effect)
         {
-            if (!_effectMap.TryGetValue(type, out var e))
+            if (!_effectMap.TryGetValue(type, out effect))
             {
-                effect = null;
                 return false;
             }
-            else
-            {
-                effect = e;
-                return true;
-            }
+            return true;
         }
 
         /// <summary>
@@ -135,7 +130,19 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
                 RenderMesh(customEffect, mesh, world, view, projection);
             }
         }
+/*
 
+        public void RenderObjectWithMesh(Object3D obj, Matrix world, Matrix view, Matrix projection)
+        {
+            // Ensure the object has meshes built from polygons
+            // Does transformations and builds meshes if not already done
+            obj.UpdateObject();
+            foreach (var mesh in obj.MeshesByTexture.Values)
+            {
+                RenderMesh(mesh, world, view, projection);
+            }
+        }
+*/
         public void RenderObjectWithMesh(Object3D obj, Matrix world, Matrix view, Matrix projection)
         {
             // Ensure the object has meshes built from polygons
