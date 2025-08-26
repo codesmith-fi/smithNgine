@@ -86,6 +86,8 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
         {
             // Ensure the object has meshes built from polygons
             // Does transformations and builds meshes if not already done
+            // Future optimization note:
+            //    This can be optimized to only build meshes if polygons or transformation have changed
             obj.UpdateObject();
             foreach (var mesh in obj.MeshesByTexture.Values)
             {
