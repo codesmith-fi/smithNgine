@@ -11,9 +11,8 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
     // </summary>
     public class RenderableMesh : Mesh3D
     {
-        public EffectType EffectType { get; } = EffectType.BasicColor;
+        public EffectType EffectType { get; } = EffectType.Undefined;
         public Object3D SourceObject { get; } = null;
-        public EffectParameters Parameters { get; } = null;
 
         public RenderableMesh(
             Texture2D texture,
@@ -22,13 +21,12 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             List<Vector2> textureUVs,
             List<int> indices) : base(texture, vertices, normals, textureUVs, indices)
         {
-            EffectType = EffectType.BasicColor;
+            EffectType = EffectType.Undefined;
             SourceObject = null;
-            Parameters = null;
         }
 
         public RenderableMesh(
-            EffectType effectType, Object3D sourceObject, EffectParameters parameters,
+            EffectType effectType, Object3D sourceObject,
             Texture2D texture,
             List<Vertex3D> vertices,
             List<Vector3> normals,
@@ -37,11 +35,9 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
         {
             // Sanity check
             if (sourceObject == null) throw new ArgumentNullException("Object can't be null");
-            if (parameters == null) throw new ArgumentNullException("Effect parameters can't be null");
 
             EffectType = effectType;
             SourceObject = sourceObject;
-            Parameters = parameters;
         }
     }
 }

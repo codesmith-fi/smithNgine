@@ -7,11 +7,9 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
     // This can be expanded as needed for additional effects
     public enum EffectType
     {
-        BasicColor,
+        Undefined,
+        Basic,
         BasicTexture,
-        BasicColorTexture,
-        LitTexture,
-        LitVertexColor,
-        LitColorTexture
+        LitTextureAmbientDiffuse
     }
 }

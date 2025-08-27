@@ -6,12 +6,17 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
     using Microsoft.Xna.Framework.Graphics;
     using Microsoft.Xna.Framework;
     using Codesmith.SmithNgine.Smith3D.Primitives;
+    // For RenderableMesh
+    // TODO: Perhaps a future refactor to remove dependecy from 3D Primitives 
+    // to the Renderer.
+    using Codesmith.SmithNgine.Smith3D.Renderer; 
+ 
     public class Object3D
     {
-        private EffectType effectType = EffectType.LitVertexColor;
+        private EffectType effectType = EffectType.Undefined;
         public List<Polygon3D> Polygons { get; private set; } = new List<Polygon3D>();
         public Dictionary<Texture2D, List<Polygon3D>> PolygonsByTexture { get; private set; } = new Dictionary<Texture2D, List<Polygon3D>>();
-        public Dictionary<Texture2D, Mesh3D> MeshesByTexture { get; private set; } = new Dictionary<Texture2D, Mesh3D>();
+        public Dictionary<Texture2D, RenderableMesh> MeshesByTexture { get; private set; } = new Dictionary<Texture2D, RenderableMesh>();
         public Vector3 Position { get; set; } = Vector3.Zero;
         public Quaternion Rotation { get; set; } = Quaternion.Identity;
         public Vector3 Scale { get; set; } = Vector3.One;
@@ -46,7 +51,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             Scale = obj.Scale;
             Polygons = new List<Polygon3D>(obj.Polygons);
             PolygonsByTexture = new Dictionary<Texture2D, List<Polygon3D>>(obj.PolygonsByTexture);
-            MeshesByTexture = new Dictionary<Texture2D, Mesh3D>(obj.MeshesByTexture);
+            MeshesByTexture = new Dictionary<Texture2D, RenderableMesh>(obj.MeshesByTexture);
         }
 
         public Object3D(Vector3 position, Quaternion eulerRotationRadians, Vector3 scale)
@@ -66,10 +71,12 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             );
             Scale = scale;
         }
-
+        // <summary>
+        // Set effect for all polygons 
+        // </summary>
         public void SetEffect(EffectType effect)
         {
-            effectType = effect; 
+            effectType = effect;
             foreach (var polygon in Polygons)
             {
                 polygon.EffectType = effect;
@@ -144,34 +151,6 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             MeshesByTexture.Clear();
         }
 
-        // Builds meshes from polygons, applying the object's world transformation
-        public void BuildMeshes()
-        {
-            if (PolygonsByTexture.Count == 0)
-            {
-                throw new InvalidOperationException("No polygons to build meshes from.");
-            }
-            MeshesByTexture.Clear();
-            Matrix transform = WorldMatrix;
-            foreach (var pbt in PolygonsByTexture)
-            {
-                var texture = pbt.Key;
-                List<Polygon3D> transformedPolygons = new List<Polygon3D>();
-                foreach (var polygon in pbt.Value)
-                {
-                    transformedPolygons.Add(polygon.GetTransformedCopy(transform));
-                }
-
-                if (MeshesByTexture.ContainsKey(texture))
-                {
-                    throw new InvalidOperationException($"Mesh for texture {texture.Name} already exists.");
-                }
-
-                Mesh3D mesh = BuildMeshForTexturePolygons(transformedPolygons, texture);
-                MeshesByTexture[texture] = mesh;
-            }
-        }
-
         // Updates existing meshes from current polygons and transformation
         // This can be called if polygons or transformation have changed
         public void UpdateObject()
@@ -190,12 +169,13 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
                     throw new InvalidOperationException($"Mesh for texture {texture.Name} already exists.");
                 }
 
-                Mesh3D mesh = BuildMeshForTexturePolygons(polygons, texture);
+
+                RenderableMesh mesh = BuildMeshes(polygons, texture);
                 MeshesByTexture[texture] = mesh;
             }
         }
 
-        private Mesh3D BuildMeshForTexturePolygons(List<Polygon3D> polygons, Texture2D texture)
+        private RenderableMesh BuildMeshes(List<Polygon3D> polygons, Texture2D texture)
         {
             var vertices = new List<Vertex3D>();
             var normals = new List<Vector3>();
@@ -211,13 +191,13 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             {
                 throw new ArgumentException("All polygons must have exactly three vertices.");
             }
-            
+
             // Iterate through each polygon and extract vertices, normals, and texture coordinates
-            
+
             int vertexOffset = 0;
             foreach (var polygon in polygons)
             {
-                foreach(var vertex in polygon.Vertices)
+                foreach (var vertex in polygon.Vertices)
                 {
                     vertices.Add(vertex);
                     normals.Add(polygon.Normal);
@@ -225,7 +205,10 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
                     indices.Add(vertexOffset++);
                 }
             }
-            return new Mesh3D(texture, vertices, normals, textureUVs, indices);
+
+            return new RenderableMesh(
+                effectType, this, 
+                texture, vertices, normals, textureUVs, indices);
         }
     }
 }

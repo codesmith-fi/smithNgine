@@ -8,9 +8,6 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer.RenderEffect
 
     public class LitTextureParameters : EffectParameters
     {
-        public Matrix World { get; set; } = Matrix.Identity;
-        public Matrix View { get; set; } = new Matrix();
-        public Matrix Projection { get; set; } = new Matrix();
         public Texture2D Texture { get; set; } = null;
         public Vector3 LightPosition { get; set; } = new Vector3(0, 0, 0);
         public Color LightColor { get; set; } = Color.White;
@@ -22,9 +19,6 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer.RenderEffect
 
         public override void ApplyTo(Effect effect)
         {
-            effect.Parameters["World"]?.SetValue(World);
-            effect.Parameters["View"]?.SetValue(View);
-            effect.Parameters["Projection"]?.SetValue(Projection);
             effect.Parameters["Texture"]?.SetValue(Texture);
             effect.Parameters["lightPosition"]?.SetValue(LightPosition);
             effect.Parameters["lightColor"]?.SetValue(LightColor.ToVector3());
@@ -33,6 +27,7 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer.RenderEffect
             effect.Parameters["linearAttenuation"]?.SetValue(LinearAttenuation);
             effect.Parameters["quadraticAttenuation"]?.SetValue(QuadraticAttenuation);
             effect.Parameters["gameTime"]?.SetValue(GameTime);
+            base.ApplyTo(effect);
         }
     }
 }

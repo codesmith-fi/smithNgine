@@ -18,7 +18,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
         public Vertex3D[] Vertices => vertices;
         public Texture2D Texture { get; set; }
         public Vector3 Normal { get; private set; }
-        public EffectType EffectType { get; set; }
+        public EffectType EffectType { get; set; } = EffectType.Undefined;
 
         public Color Color
         {
@@ -34,13 +34,18 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             }
             this.vertices = vertices;
             Texture = texture;
+            EffectType = EffectType.Undefined;
             ComputeNormal();
         }
 
-        public Polygon3D(Vertex3D vertex1, Vertex3D vertex2, Vertex3D vertex3, Texture2D texture)
+        public Polygon3D(
+            Vertex3D vertex1, Vertex3D vertex2, Vertex3D vertex3,
+            Texture2D texture,
+            EffectType effectType = EffectType.Undefined)
         {
             vertices = [vertex1, vertex2, vertex3];
             Texture = texture;
+            EffectType = effectType;
             ComputeNormal();
         }
 

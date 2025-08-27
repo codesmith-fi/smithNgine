@@ -12,17 +12,17 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer.RenderEffect
         /// <summary>
         /// Registers an effect with its associated EffectType.
         /// </summary>
-        void RegisterEffect<TParameters>(EffectType type, Effect effect)
+        public void RegisterEffect<TParameters>(EffectType type, Effect effect)
             where TParameters : EffectParameters, new();
 
         /// <summary>
-        /// Attempts to retrieve the effect associated with the given type.
+        /// Attempts to retrieve the effect associated with the given effect type.
         /// </summary>
-        bool TryGetEffect(EffectType type, out Effect effect);
+        public bool TryGetEffect(EffectType type, out Effect effect);
 
         /// <summary>
         /// Applies the given parameters to the effect associated with the type.
         /// </summary>
-        bool ApplyParameters(EffectType type, EffectParameters parameters);
+        public bool ApplyParameters(EffectType type, EffectParameters parameters);
         }
 }

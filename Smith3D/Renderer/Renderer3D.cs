@@ -7,34 +7,39 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
     using System.Collections.Generic;
     using Codesmith.SmithNgine.Smith3D.Primitives;
     using Codesmith.SmithNgine.Smith3D.Renderer.RenderEffect;
+    using System.Net.Http;
 
     /// <summary>
     /// Renderer class for rendering 3D objects in the game.
     /// </summary>
 
+
     public class Renderer3D : IEffectHandler
     {
         private GraphicsDevice graphicsDevice;
-        private BasicEffect basicEffect;
         // Map to hold all different supported effects for rendering
         private readonly Dictionary<EffectType, Effect> _effectMap = new();
-        private readonly Dictionary<EffectType, EffectParameters> _parameterMap = new();
 
         public Renderer3D(GraphicsDevice device)
         {
             graphicsDevice = device;
 
-            basicEffect = new BasicEffect(graphicsDevice)
-            {
-                VertexColorEnabled = true,
-                LightingEnabled = false,
-                PreferPerPixelLighting = true
-            };
 
-            // Optional: Set default lighting
-            basicEffect.DirectionalLight0.Enabled = true;
-            basicEffect.DirectionalLight0.Direction = new Vector3(0, -1, -1);
-            basicEffect.DirectionalLight0.DiffuseColor = new Vector3(1, 1, 1);
+            /* TODO: BasicEffect could be used as recovery if certain type of custom effect
+                    is not registered in this implementation of IEffectHandler
+
+                        basicEffect = new BasicEffect(graphicsDevice)
+                        {
+                            VertexColorEnabled = true,
+                            LightingEnabled = false,
+                            PreferPerPixelLighting = true
+                        };
+
+                        // Optional: Set default lighting
+                        basicEffect.DirectionalLight0.Enabled = true;
+                        basicEffect.DirectionalLight0.Direction = new Vector3(0, -1, -1);
+                        basicEffect.DirectionalLight0.DiffuseColor = new Vector3(1, 1, 1);
+                    */
         }
 
         public void RegisterEffect<TParameters>(EffectType type, Effect effect)
@@ -65,9 +70,8 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
                 return false;
             }
             parameters.ApplyTo(effect);
-            return false;
+            return true;
         }
-
 
         // Future optimization: Render entire scene with a single Mesh 
         // But then it needs somehow handle how WorldMatrix
@@ -79,37 +83,71 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             // Render objects
             foreach (var obj in scene.Objects)
             {
-                RenderObjectWithMesh(obj, obj.WorldMatrix,
-                    scene.Camera.ViewMatrix, scene.Camera.ProjectionMatrix);
+                renderMesh(scene, obj);
             }
-            // Render lights if needed (not implemented in this example)
         }
-
-        public void RenderObjectWithMesh(Object3D obj, Matrix world, Matrix view, Matrix projection)
+        //  RenderObjectWithMesh(obj.WorldMatrix, scene.Camera.ViewMatrix, scene.Camera.ProjectionMatrix) // OLD OLD OLD
+        private void renderMesh(Scene3D scene, Object3D obj)
         {
             // Ensure the object has meshes built from polygons
             // Does transformations and builds meshes if not already done
             obj.UpdateObject();
             foreach (var mesh in obj.MeshesByTexture.Values)
             {
-                RenderMesh(mesh, world, view, projection);
+                doRenderMesh(scene, mesh, obj.WorldMatrix);
             }
         }
 
-        private void RenderMesh(Mesh3D mesh, Matrix world, Matrix view, Matrix projection)
+        private void doRenderMesh(Scene3D scene, RenderableMesh mesh, Matrix world)
         {
-            basicEffect.World = world;
-            basicEffect.View = view;
-            basicEffect.Projection = projection;
-            basicEffect.TextureEnabled = true;
-            basicEffect.Texture = mesh.Texture;
-            basicEffect.VertexColorEnabled = true;
-            basicEffect.LightingEnabled = false;
+            if (mesh == null) throw new ArgumentNullException(nameof(mesh), "Mesh cannot be null.");
 
-            if (mesh.Texture == null)
+            // Get the effect for this mesh if the requested type is registered
+            // TODO: Fallback to some basic effect if no specific effect 
+            if (!TryGetEffect(mesh.EffectType, out var meshEffect))
             {
-                basicEffect.TextureEnabled = false;
+                throw new InvalidOperationException("Requested effect not registered");
             }
+
+            // Set specific effect related properties, if any.
+            switch (mesh.EffectType)
+            {
+                case EffectType.Basic:
+                    break;
+                case EffectType.BasicTexture:
+                    meshEffect.Parameters["Texture"].SetValue(mesh.Texture);
+                    break;
+                case EffectType.LitTextureAmbientDiffuse:
+                    meshEffect.Parameters["Texture"].SetValue(mesh.Texture);
+                    break;
+                case EffectType.Undefined:
+                    // TODO improvement: For recovery, XNA BasicEffect could perhaps be used?
+                    throw new InvalidOperationException(
+                        "Mesh does not define any custom effect");
+            }
+
+            meshEffect.Parameters["World"].SetValue(world);
+            meshEffect.Parameters["View"].SetValue(scene.Camera.ViewMatrix);
+            meshEffect.Parameters["Projection"].SetValue(scene.Camera.ProjectionMatrix);
+            doRenderMesh(mesh, meshEffect);
+        }
+
+        /// <summary>
+        ///    Builds vertex and other buffers
+        ///    Renders mesh with the requested effect using DrawIndexedPrimitives
+        ///    
+        ///     NOTE: Assumes that the effect has all parameters set 
+        ///     for the shader bound to it (using Effect.Parameters("name")) 
+        /// </summary>
+        /// <param name="mesh"></param>
+        /// <param name="effect"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        private void doRenderMesh(Mesh3D mesh, Effect effect)
+        {
+            if (mesh == null) throw new ArgumentNullException("Mesh cannot not be null!");
+            if (effect == null) throw new ArgumentException("Render effect cannot be null");
 
             // Validate mesh data and indices
             foreach (int index in mesh.Indices)
@@ -147,7 +185,7 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             indexBuffer.SetData(mesh.Indices.ToArray());
             graphicsDevice.Indices = indexBuffer;
             // Apply effect and draw
-            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
+            foreach (EffectPass pass in effect.CurrentTechnique.Passes)
             {
                 pass.Apply();
                 graphicsDevice.DrawIndexedPrimitives(
@@ -198,203 +236,5 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
                 );
             }
         }
-
-        // ------------------------ OLD RENDERING CODE, TO BE REMOVED/REFACTORED ---------------------
-        private void RenderMesh(Effect customEffect, Mesh3D mesh, Matrix world, Matrix view, Matrix projection)
-        {
-            if (customEffect == null) throw new ArgumentNullException(nameof(customEffect), "Effect cannot be null.");
-            if (mesh == null) throw new ArgumentNullException(nameof(mesh), "Mesh cannot be null.");
-
-            customEffect.Parameters["View"].SetValue(view);
-            customEffect.Parameters["Projection"].SetValue(projection);
-            customEffect.Parameters["World"].SetValue(world);
-            if (mesh.Texture != null)
-            {
-                customEffect.Parameters["Texture"].SetValue(mesh.Texture);
-                customEffect.CurrentTechnique = customEffect.Techniques["Textured"];
-                //                customEffect.CurrentTechnique = customEffect.Techniques["TexturedPointLight"];            
-
-            }
-            else
-            {
-                customEffect.CurrentTechnique = customEffect.Techniques["Colored"];
-            }
-
-            // Validate mesh data and indices
-            foreach (int index in mesh.Indices)
-            {
-                if (index < 0 || index >= mesh.Vertices.Count)
-                    throw new InvalidOperationException($"Invalid index: {index}");
-            }
-
-            VertexPositionColorTexture[] vertexArray = new VertexPositionColorTexture[mesh.Vertices.Count];
-            for (int i = 0; i < mesh.Vertices.Count; i++)
-            {
-                var vertex = mesh.Vertices[i];
-                vertexArray[i] = new VertexPositionColorTexture(
-                    vertex.Position,
-                    vertex.Color,
-                    vertex.TextureUV);
-            }
-
-            VertexBuffer vertexBuffer = new VertexBuffer(
-                graphicsDevice,
-                VertexPositionColorTexture.VertexDeclaration,
-                vertexArray.Length,
-                BufferUsage.WriteOnly);
-
-            vertexBuffer.SetData(vertexArray);
-            // Bind vertex buffer to the graphics device
-            graphicsDevice.SetVertexBuffers(new VertexBufferBinding(vertexBuffer));
-
-            // Create index buffer from mesh indices
-            IndexBuffer indexBuffer = new IndexBuffer(
-                graphicsDevice,
-                IndexElementSize.ThirtyTwoBits,
-                mesh.Indices.Count,
-                BufferUsage.WriteOnly);
-            indexBuffer.SetData(mesh.Indices.ToArray());
-            graphicsDevice.Indices = indexBuffer;
-            // Apply effect and draw
-            foreach (EffectPass pass in customEffect.CurrentTechnique.Passes)
-            {
-                pass.Apply();
-                graphicsDevice.DrawIndexedPrimitives(
-                    PrimitiveType.TriangleList,
-                    0,
-                    0,
-                    mesh.Indices.Count / 3);
-            }
-        }
-/*
-        public void RenderScene(Scene3D scene, Effect customEffect)
-        {
-            if (scene == null) throw new ArgumentNullException(nameof(scene), "Scene cannot be null.");
-            if (customEffect == null) throw new ArgumentNullException(nameof(customEffect), "Effect cannot be null.");
-
-            // Render objects
-            foreach (var obj in scene.Objects)
-            {
-                RenderObjectWithMesh(customEffect, obj, obj.WorldMatrix,
-                    scene.Camera.ViewMatrix, scene.Camera.ProjectionMatrix);
-            }
-            // Render lights if needed (not implemented in this example)
-        }
-
-
-            public void RenderScene(Scene3D scene, Effect e)
-            {
-                if (scene == null) throw new ArgumentNullException(nameof(scene), "Scene cannot be null.");
-                if (e == null) throw new ArgumentNullException(nameof(e), "Effect cannot be null.");
-
-                // Set effect parameters
-                e.Parameters["View"].SetValue(scene.Camera.ViewMatrix);
-                e.Parameters["Projection"].SetValue(scene.Camera.ProjectionMatrix);
-                // Render objects generating meshes from polygons
-                foreach (var obj in scene.Objects)
-                {
-                    e.Parameters["World"].SetValue(obj.WorldMatrix);
-                    obj.UpdateObject();
-                    foreach (var mesh in obj.MeshesByTexture.Values)
-                    {
-                        RenderMesh(mesh, e);
-                    }
-                }
-            }                       
-
-        public void RenderObjectWithMesh(Effect customEffect, Object3D obj, Matrix world, Matrix view, Matrix projection)
-        {
-            // Ensure the object has meshes built from polygons
-            // Does transformations and builds meshes if not already done
-            // Future optimization note:
-            //    This can be optimized to only build meshes if polygons or transformation have changed
-            obj.UpdateObject();
-            foreach (var mesh in obj.MeshesByTexture.Values)
-            {
-                RenderMesh(customEffect, mesh, world, view, projection);
-            }
-        }
-
-        public void RenderObject(Object3D obj, Matrix world, Matrix view, Matrix projection)
-        {
-            if (obj == null) throw new ArgumentNullException(nameof(obj), "Object cannot be null.");
-            IEnumerable<Polygon3D> transformedVertices = obj.GetTransformedPolygons();
-            foreach (var polygon in transformedVertices)
-            {
-                RenderPolygon(polygon, world, view, projection);
-            }
-
-        }
-
-        public void RenderObjectFlat(Object3D obj, Matrix world, Matrix view, Matrix projection)
-        {
-            if (obj == null) throw new ArgumentNullException(nameof(obj), "Object cannot be null.");
-
-            IEnumerable<Polygon3D> transformedVertices = obj.GetTransformedPolygons();
-            foreach (var polygon in transformedVertices)
-            {
-                RenderPolygonFlat(polygon, world, view, projection);
-            }
-        }
-
-        public void RenderPolygon(Polygon3D polygon, Matrix world, Matrix view, Matrix projection)
-        {
-            // Set transformation matrices
-            basicEffect.World = world;
-            basicEffect.View = view;
-            basicEffect.Projection = projection;
-
-            basicEffect.Texture = polygon.Texture;
-            basicEffect.VertexColorEnabled = true;
-            basicEffect.TextureEnabled = true;
-
-            // Convert polygon to renderable vertices
-            VertexPositionColorTexture[] vertexData = polygon.ToVertexPositionColorTextureArray();
-            VertexBuffer vertexBuffer = new VertexBuffer(
-                graphicsDevice,
-                //                VertexPositionColorTexture.VertexDeclaration,
-                VertexPositionColorTexture.VertexDeclaration,
-                vertexData.Length,
-                BufferUsage.WriteOnly);
-
-            vertexBuffer.SetData(vertexData);
-            graphicsDevice.SetVertexBuffer(vertexBuffer);
-
-            // Apply effect and draw
-            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
-            {
-                pass.Apply();
-                graphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, 1);
-            }
-        }
-
-        public void RenderPolygonFlat(Polygon3D polygon, Matrix world, Matrix view, Matrix projection)
-        {
-            // Set transformation matrices
-            basicEffect.World = world;
-            basicEffect.View = view;
-            basicEffect.Projection = projection;
-            basicEffect.VertexColorEnabled = true;
-
-            VertexPositionColor[] vertexData = polygon.ToVertexPositionColorArray();
-            // Create and bind vertex buffer
-            VertexBuffer vertexBuffer = new VertexBuffer(
-                graphicsDevice,
-                //                VertexPositionColorTexture.VertexDeclaration,
-                VertexPositionColor.VertexDeclaration,
-                vertexData.Length,
-                BufferUsage.WriteOnly);
-
-            vertexBuffer.SetData(vertexData);
-            graphicsDevice.SetVertexBuffer(vertexBuffer);
-
-            // Apply effect and draw
-            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
-            {
-                pass.Apply();
-                graphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, 1);
-            }
-        }
-*/
     }
 }
