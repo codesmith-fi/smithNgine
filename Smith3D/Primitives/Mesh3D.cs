@@ -15,7 +15,8 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
         public Texture2D Texture { get; set; } = null;
         public List<Vector2> TextureUVs { get; set; } = new List<Vector2>();
 
-        public Mesh3D(Texture2D texture,
+        public Mesh3D(
+            Texture2D texture,
             List<Vertex3D> vertices,
             List<Vector3> normals = null,
             List<Vector2> textureUVs = null,

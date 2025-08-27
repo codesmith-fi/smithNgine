@@ -3,6 +3,10 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer.RenderEffect
     using System;
     using Microsoft.Xna.Framework;
     using Microsoft.Xna.Framework.Graphics;
+
+    // <summary>
+    // Parameters for basic effect having a texture only
+    // </summary>
     public class BasicTextureParameters : EffectParameters
     {
         public Texture2D Texture { get; set; }
@@ -12,6 +16,5 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer.RenderEffect
             effect.Parameters["Texture"]?.SetValue(Texture);
         }
     }
-
 }
 

@@ -162,7 +162,6 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             customEffect.Parameters["View"].SetValue(view);
             customEffect.Parameters["Projection"].SetValue(projection);
             customEffect.Parameters["World"].SetValue(world);
-
             if (mesh.Texture != null)
             {
                 customEffect.Parameters["Texture"].SetValue(mesh.Texture);
