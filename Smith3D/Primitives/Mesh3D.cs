@@ -13,12 +13,14 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
         public List<Vector3> Normals { get; set; } = new List<Vector3>();
         public List<int> Indices { get; set; } = new List<int>();
         public Texture2D Texture { get; set; } = null;
+        public List<Color> Colours { get; set; } = new List<Color>();
         public List<Vector2> TextureUVs { get; set; } = new List<Vector2>();
 
         public Mesh3D(
             Texture2D texture,
             List<Vertex3D> vertices,
             List<Vector3> normals = null,
+            List<Color> colours = null,
             List<Vector2> textureUVs = null,
             List<int> indices = null)
         {
@@ -33,10 +35,15 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
                 throw new ArgumentNullException(nameof(vertices), "Vertices cannot be null or empty.");
             }
 
-            if (indices == null || indices.Count != vertices.Count)
+            if (colours == null || colours.Count == 0)
             {
-                throw new ArgumentNullException(nameof(indices), "Indices cannot be null or must match the number of vertices.");
+                throw new ArgumentNullException(nameof(colours), "Colours cannot be null or empty");
             }
+
+            if (indices == null || indices.Count != vertices.Count)
+                {
+                    throw new ArgumentNullException(nameof(indices), "Indices cannot be null or must match the number of vertices.");
+                }
 
             // If normals are not provided, create default normals
             // or use existing normals if provided
@@ -51,6 +58,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
 
             Vertices = vertices;
             Normals = normals;
+            Colours = colours;
             Indices = indices;
             Texture = texture;
             TextureUVs = textureUVs;
@@ -86,6 +94,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             var normals = new List<Vector3>(mesh1.Normals);
             var textureUVs = new List<Vector2>(mesh1.TextureUVs);
             var indices = new List<int>(mesh1.Indices);
+            var colours = new List<Color>(mesh1.Colours);
 
             int vertexOffset = vertices.Count;
 
@@ -95,9 +104,10 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
                 normals.Add(vertex.Normal);
                 textureUVs.Add(vertex.TextureUV);
                 indices.Add(vertexOffset++);
+                colours.Add(vertex.Color);
             }
 
-            return new Mesh3D(mesh1.Texture, vertices, normals, textureUVs, indices);
+            return new Mesh3D(mesh1.Texture, vertices, normals, colours, textureUVs, indices);
         }   
     }
 }

@@ -18,8 +18,9 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             Texture2D texture,
             List<Vertex3D> vertices,
             List<Vector3> normals,
+            List<Color> colours,
             List<Vector2> textureUVs,
-            List<int> indices) : base(texture, vertices, normals, textureUVs, indices)
+            List<int> indices) : base(texture, vertices, normals, colours, textureUVs, indices)
         {
             EffectType = EffectType.Undefined;
             SourceObject = null;
@@ -30,8 +31,9 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             Texture2D texture,
             List<Vertex3D> vertices,
             List<Vector3> normals,
+            List<Color> colours,
             List<Vector2> textureUVs,
-            List<int> indices) : base(texture, vertices, normals, textureUVs, indices)
+            List<int> indices) : base(texture, vertices, normals, colours, textureUVs, indices)
         {
             // Sanity check
             if (sourceObject == null) throw new ArgumentNullException("Object can't be null");

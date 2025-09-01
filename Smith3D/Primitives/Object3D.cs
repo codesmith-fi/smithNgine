@@ -181,6 +181,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             var normals = new List<Vector3>();
             var textureUVs = new List<Vector2>();
             var indices = new List<int>();
+            var colours = new List<Color>();
 
             if (polygons == null || polygons.Count == 0)
             {
@@ -203,12 +204,13 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
                     normals.Add(polygon.Normal);
                     textureUVs.Add(vertex.TextureUV);
                     indices.Add(vertexOffset++);
+                    colours.Add(vertex.Color);
                 }
             }
 
             return new RenderableMesh(
                 effectType, this, 
-                texture, vertices, normals, textureUVs, indices);
+                texture, vertices, normals, colours, textureUVs, indices);
         }
     }
 }

@@ -6,6 +6,7 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
     using Microsoft.Xna.Framework.Graphics;
     using System.Collections.Generic;
     using Codesmith.SmithNgine.Smith3D.Primitives;
+    using Codesmith.SmithNgine.Smith3D.Primitives.VertexTypes;
     using Codesmith.SmithNgine.Smith3D.Renderer.RenderEffect;
     using System.Net.Http;
 
@@ -83,22 +84,22 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             // Render objects
             foreach (var obj in scene.Objects)
             {
-                renderMesh(scene, obj);
+                renderObject(scene, obj);
             }
         }
         //  RenderObjectWithMesh(obj.WorldMatrix, scene.Camera.ViewMatrix, scene.Camera.ProjectionMatrix) // OLD OLD OLD
-        private void renderMesh(Scene3D scene, Object3D obj)
+        private void renderObject(Scene3D scene, Object3D obj)
         {
             // Ensure the object has meshes built from polygons
             // Does transformations and builds meshes if not already done
             obj.UpdateObject();
             foreach (var mesh in obj.MeshesByTexture.Values)
             {
-                doRenderMesh(scene, mesh, obj.WorldMatrix);
+                renderMesh(scene, mesh, obj.WorldMatrix);
             }
         }
 
-        private void doRenderMesh(Scene3D scene, RenderableMesh mesh, Matrix world)
+        private void renderMesh(Scene3D scene, RenderableMesh mesh, Matrix world)
         {
             if (mesh == null) throw new ArgumentNullException(nameof(mesh), "Mesh cannot be null.");
 
@@ -129,7 +130,7 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             meshEffect.Parameters["World"].SetValue(world);
             meshEffect.Parameters["View"].SetValue(scene.Camera.ViewMatrix);
             meshEffect.Parameters["Projection"].SetValue(scene.Camera.ProjectionMatrix);
-            doRenderMesh(mesh, meshEffect);
+            doRenderMeshWithNormals(mesh, meshEffect);
         }
 
         /// <summary>
@@ -169,6 +170,59 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             VertexBuffer vertexBuffer = new VertexBuffer(
                 graphicsDevice,
                 VertexPositionColorTexture.VertexDeclaration,
+                vertexArray.Length,
+                BufferUsage.WriteOnly);
+
+            vertexBuffer.SetData(vertexArray);
+            // Bind vertex buffer to the graphics device
+            graphicsDevice.SetVertexBuffers(new VertexBufferBinding(vertexBuffer));
+
+            // Create index buffer from mesh indices
+            IndexBuffer indexBuffer = new IndexBuffer(
+                graphicsDevice,
+                IndexElementSize.ThirtyTwoBits,
+                mesh.Indices.Count,
+                BufferUsage.WriteOnly);
+            indexBuffer.SetData(mesh.Indices.ToArray());
+            graphicsDevice.Indices = indexBuffer;
+            // Apply effect and draw
+            foreach (EffectPass pass in effect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                graphicsDevice.DrawIndexedPrimitives(
+                    PrimitiveType.TriangleList,
+                    0,
+                    0,
+                    mesh.Indices.Count / 3);
+            }
+        }
+
+        private void doRenderMeshWithNormals(Mesh3D mesh, Effect effect)
+        {
+            if (mesh == null) throw new ArgumentNullException("Mesh cannot not be null!");
+            if (effect == null) throw new ArgumentException("Render effect cannot be null");
+
+            // Validate mesh data and indices
+            foreach (int index in mesh.Indices)
+            {
+                if (index < 0 || index >= mesh.Vertices.Count)
+                    throw new InvalidOperationException($"Invalid index: {index}");
+            }
+
+            VertexPositionNormalColorTexture[] vertexArray = new VertexPositionNormalColorTexture[mesh.Vertices.Count];
+            for (int i = 0; i < mesh.Vertices.Count; i++)
+            {
+                var vertex = mesh.Vertices[i];
+                vertexArray[i] = new VertexPositionNormalColorTexture(
+                    vertex.Position,
+                    vertex.Normal,
+                    vertex.Color,
+                    vertex.TextureUV);
+            }
+
+            VertexBuffer vertexBuffer = new VertexBuffer(
+                graphicsDevice,
+                VertexPositionNormalColorTexture.VertexDeclaration,
                 vertexArray.Length,
                 BufferUsage.WriteOnly);
 
