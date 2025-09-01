@@ -10,6 +10,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
         Undefined,
         Basic,
         BasicTexture,
+        LitTextureAmbient,
         LitTextureAmbientDiffuse
     }
 }
