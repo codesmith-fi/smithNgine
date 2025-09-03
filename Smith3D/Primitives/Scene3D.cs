@@ -40,7 +40,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
             Lights.Add(light);
         }
 
-        private void ClearScene()
+        public void Clear()
         {
             Objects.Clear();
             Lights.Clear();
