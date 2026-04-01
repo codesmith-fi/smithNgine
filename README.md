@@ -67,10 +67,13 @@ Example for using the 3D renderer:
         renderer3D.RegisterEffect<LitTextureAmbientDiffuseEffectParameters>(
             EffectType.LitTextureAmbientDiffuse,
             LoadEffectFromFile("Content/Shaders/LitTextureAmbientDiffuse.mgfxo"));
+        renderer3D.RegisterEffect<LitTextureParameters>(
+            EffectType.PointLight,
+            LoadEffectFromFile("Content/Shaders/PointLight.mgfxo"));
 
         testObject1.SetEffect(EffectType.BasicTexture);
         testObject2.SetEffect(EffectType.LitTextureAmbientDiffuse);
-        testObject3.SetEffect(EffectType.Basic);
+        testObject3.SetEffect(EffectType.PointLight);
 
         // Set parameters for registered effects
         basicEffectParameters = new BasicEffectParameters() { };

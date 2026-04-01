@@ -11,6 +11,7 @@ namespace Codesmith.SmithNgine.Smith3D.Primitives
         Basic,
         BasicTexture,
         LitTextureAmbient,
-        LitTextureAmbientDiffuse
+        LitTextureAmbientDiffuse,
+        PointLight
     }
 }

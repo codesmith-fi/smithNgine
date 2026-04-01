@@ -2,6 +2,8 @@
 namespace Codesmith.SmithNgine.Smith3D.Renderer
 {
     using System;
+    using System.Linq;
+    using System.Runtime.CompilerServices;
     using Microsoft.Xna.Framework;
     using Microsoft.Xna.Framework.Graphics;
     using System.Collections.Generic;
@@ -20,6 +22,9 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
         private GraphicsDevice graphicsDevice;
         // Map to hold all different supported effects for rendering
         private readonly Dictionary<EffectType, Effect> _effectMap = new();
+        private Scene3D _cachedScene = null;
+        private int _cachedSceneGeometrySignature = 0;
+        private List<BatchedMesh> _cachedBatchedMeshes = new();
 
         public Renderer3D(GraphicsDevice device)
         {
@@ -81,10 +86,17 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
         public void RenderScene(Scene3D scene)
         {
             if (scene == null) throw new ArgumentNullException(nameof(scene), "Scene cannot be null.");
-            // Render objects
-            foreach (var obj in scene.Objects)
+            int sceneGeometrySignature = calculateSceneGeometrySignature(scene);
+            if (_cachedScene != scene || _cachedSceneGeometrySignature != sceneGeometrySignature)
             {
-                renderObject(scene, obj);
+                _cachedBatchedMeshes = buildSceneBatches(scene);
+                _cachedScene = scene;
+                _cachedSceneGeometrySignature = sceneGeometrySignature;
+            }
+
+            foreach (BatchedMesh batch in _cachedBatchedMeshes)
+            {
+                renderMesh(scene, batch.Mesh, batch.EffectType, Matrix.Identity);
             }
         }
         //  RenderObjectWithMesh(obj.WorldMatrix, scene.Camera.ViewMatrix, scene.Camera.ProjectionMatrix) // OLD OLD OLD
@@ -99,19 +111,121 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             }
         }
 
+        private List<BatchedMesh> buildSceneBatches(Scene3D scene)
+        {
+            Dictionary<(Texture2D texture, EffectType effectType), MeshBuildData> groupedData = new();
+
+            foreach (Object3D obj in scene.Objects)
+            {
+                Matrix world = obj.WorldMatrix;
+                foreach (Polygon3D polygon in obj.Polygons)
+                {
+                    EffectType effectType = polygon.EffectType != EffectType.Undefined
+                        ? polygon.EffectType
+                        : obj.EffectType;
+
+                    if (effectType == EffectType.Undefined)
+                    {
+                        throw new InvalidOperationException("Object polygon does not define a render effect.");
+                    }
+
+                    var key = (polygon.Texture, effectType);
+                    if (!groupedData.TryGetValue(key, out MeshBuildData data))
+                    {
+                        data = new MeshBuildData();
+                        groupedData[key] = data;
+                    }
+
+                    int vertexOffset = data.Vertices.Count;
+                    foreach (Vertex3D vertex in polygon.Vertices)
+                    {
+                        Vertex3D transformedVertex = vertex.Transform(world);
+                        data.Vertices.Add(transformedVertex);
+                        data.Normals.Add(transformedVertex.Normal);
+                        data.Colours.Add(transformedVertex.Color);
+                        data.TextureUVs.Add(transformedVertex.TextureUV);
+                    }
+
+                    data.Indices.Add(vertexOffset);
+                    data.Indices.Add(vertexOffset + 1);
+                    data.Indices.Add(vertexOffset + 2);
+                }
+            }
+
+            List<BatchedMesh> result = new(groupedData.Count);
+            foreach (var groupedMesh in groupedData)
+            {
+                Mesh3D mesh = new Mesh3D(
+                    groupedMesh.Key.texture,
+                    groupedMesh.Value.Vertices,
+                    groupedMesh.Value.Normals,
+                    groupedMesh.Value.Colours,
+                    groupedMesh.Value.TextureUVs,
+                    groupedMesh.Value.Indices);
+
+                result.Add(new BatchedMesh(groupedMesh.Key.effectType, mesh));
+            }
+
+            return result;
+        }
+
+        private static int calculateSceneGeometrySignature(Scene3D scene)
+        {
+            HashCode hash = new HashCode();
+            hash.Add(scene.Objects.Count);
+
+            foreach (Object3D obj in scene.Objects)
+            {
+                hash.Add((int)obj.EffectType);
+                addMatrixToHash(ref hash, obj.WorldMatrix);
+                hash.Add(obj.Polygons.Count);
+
+                foreach (Polygon3D polygon in obj.Polygons)
+                {
+                    hash.Add((int)polygon.EffectType);
+                    hash.Add(RuntimeHelpers.GetHashCode(polygon.Texture));
+                    hash.Add(polygon.Vertices.Length);
+
+                    foreach (Vertex3D vertex in polygon.Vertices)
+                    {
+                        hash.Add(vertex.Position);
+                        hash.Add(vertex.Normal);
+                        hash.Add(vertex.TextureUV);
+                        hash.Add(vertex.Color.PackedValue);
+                    }
+                }
+            }
+
+            return hash.ToHashCode();
+        }
+
+        private static void addMatrixToHash(ref HashCode hash, Matrix matrix)
+        {
+            hash.Add(matrix.M11); hash.Add(matrix.M12); hash.Add(matrix.M13); hash.Add(matrix.M14);
+            hash.Add(matrix.M21); hash.Add(matrix.M22); hash.Add(matrix.M23); hash.Add(matrix.M24);
+            hash.Add(matrix.M31); hash.Add(matrix.M32); hash.Add(matrix.M33); hash.Add(matrix.M34);
+            hash.Add(matrix.M41); hash.Add(matrix.M42); hash.Add(matrix.M43); hash.Add(matrix.M44);
+        }
+
         private void renderMesh(Scene3D scene, RenderableMesh mesh, Matrix world)
+        {
+            if (mesh == null) throw new ArgumentNullException(nameof(mesh), "Mesh cannot be null.");
+            renderMesh(scene, (Mesh3D)mesh, mesh.EffectType, world);
+        }
+
+        private void renderMesh(Scene3D scene, Mesh3D mesh, EffectType effectType, Matrix world)
         {
             if (mesh == null) throw new ArgumentNullException(nameof(mesh), "Mesh cannot be null.");
 
             // Get the effect for this mesh if the requested type is registered
             // TODO: Fallback to some basic effect if no specific effect 
-            if (!TryGetEffect(mesh.EffectType, out var meshEffect))
+            if (!TryGetEffect(effectType, out var meshEffect))
             {
                 throw new InvalidOperationException("Requested effect not registered");
             }
 
             // Set specific effect related properties, if any.
-            switch (mesh.EffectType)
+            switch (effectType)
             {
                 case EffectType.Basic:
                     break;
@@ -120,6 +234,10 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
                     break;
                 case EffectType.LitTextureAmbientDiffuse:
                     meshEffect.Parameters["Texture"].SetValue(mesh.Texture);
+                    break;
+                case EffectType.PointLight:
+                    meshEffect.Parameters["Texture"]?.SetValue(mesh.Texture);
+                    applyPointLightParameters(scene, meshEffect);
                     break;
                 case EffectType.Undefined:
                     // TODO improvement: For recovery, XNA BasicEffect could perhaps be used?
@@ -130,7 +248,75 @@ namespace Codesmith.SmithNgine.Smith3D.Renderer
             meshEffect.Parameters["World"].SetValue(world);
             meshEffect.Parameters["View"].SetValue(scene.Camera.ViewMatrix);
             meshEffect.Parameters["Projection"].SetValue(scene.Camera.ProjectionMatrix);
-            doRenderMeshWithNormals(mesh, meshEffect);
+            try
+            {
+                doRenderMeshWithNormals(mesh, meshEffect);
+            }
+            catch (InvalidOperationException ex)
+            {
+                string techniqueName = meshEffect.CurrentTechnique?.Name ?? "<null>";
+                throw new InvalidOperationException(
+                    $"Render failed for EffectType '{effectType}' (technique '{techniqueName}').", ex);
+            }
+        }
+
+        private class MeshBuildData
+        {
+            public List<Vertex3D> Vertices { get; } = new();
+            public List<Vector3> Normals { get; } = new();
+            public List<Color> Colours { get; } = new();
+            public List<Vector2> TextureUVs { get; } = new();
+            public List<int> Indices { get; } = new();
+        }
+
+        private class BatchedMesh
+        {
+            public EffectType EffectType { get; }
+            public Mesh3D Mesh { get; }
+
+            public BatchedMesh(EffectType effectType, Mesh3D mesh)
+            {
+                EffectType = effectType;
+                Mesh = mesh;
+            }
+        }
+
+        private static void applyPointLightParameters(Scene3D scene, Effect effect)
+        {
+            PointLight pointLight = scene.Lights
+                .OfType<PointLight>()
+                .FirstOrDefault(light => light.Enabled);
+
+            if (pointLight == null)
+            {
+                Light3D genericPointLight = scene.Lights
+                    .FirstOrDefault(light => light.Enabled && light.Type == Light3D.LightType.Point);
+
+                if (genericPointLight != null)
+                {
+                    pointLight = new PointLight(genericPointLight.Position, genericPointLight.Color, genericPointLight.Intensity);
+                }
+            }
+
+            Light3D ambientLight = scene.Lights
+                .FirstOrDefault(light => light.Enabled && light.Type == Light3D.LightType.Ambient);
+
+            if (pointLight == null)
+            {
+                pointLight = new PointLight(Vector3.Zero, Color.White, 0.0f);
+            }
+
+            Color ambientColor = ambientLight?.Color ?? Color.White;
+            float ambientIntensity = ambientLight?.Intensity ?? 0.0f;
+
+            effect.Parameters["lightPosition"]?.SetValue(pointLight.Position);
+            effect.Parameters["lightColor"]?.SetValue(pointLight.Color.ToVector3());
+            effect.Parameters["lightIntensity"]?.SetValue(pointLight.Intensity);
+            effect.Parameters["constantAttenuation"]?.SetValue(pointLight.ConstantAttenuation);
+            effect.Parameters["linearAttenuation"]?.SetValue(pointLight.LinearAttenuation);
+            effect.Parameters["quadraticAttenuation"]?.SetValue(pointLight.QuadraticAttenuation);
+            effect.Parameters["ambientColor"]?.SetValue(ambientColor.ToVector3());
+            effect.Parameters["ambientIntensity"]?.SetValue(ambientIntensity);
         }
 
         /// <summary>
